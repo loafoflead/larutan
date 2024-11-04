@@ -1,0 +1,53 @@
+# LARUTAN
+
+LARUTAN (Natural backwards) is a raycasting game in the style of Wolfenstein 3D inspired (the rendering code is entirely copied in fact) by the tutorial by [https://lodev.org/cgtutor/raycasting.html](Lodev). The game is implemented in [https://c3-lang.org](C3), which is a work-in-progress evolution of the C language with built-in vectors and cool macro stuff. 
+
+LARUTAN (NATUREL à l'envers) est un jeu de 'raycasting' dans le style de Wolfenstein 3D, inspiré (en très grande partie, notamment pour le rendu graphique) par le tutoriel de [https://lodev.org/cgtutor/raycasting.html](Lodev). Le jeu est écrit en [https://c3-lang.org](C3), une évolution du langage C avec support pour des vecteurs multi-dimensionnels et de la magie avec les macros qui n'est pas disponible en C.
+
+# Controls
+
+ZQSD (WASD) to move around (ZS/WS to move backwards and forwards, QD/AD to turn), hold LEFT-ALT to strafe (move from side to side), and space (TODO) to fire with the weapon you're currently holding.
+
+# Building
+
+In order to build LARUTAN you will need the C3 compiler, which can be found on the [https://c3-lang.org/install-c3/prebuilt-binaries/](c3 website). Follow that tutorial and once you have the compiler installed (no worries if its in the same directory as the project, that may make things easier, especially if you get a problem with finding the standard library).
+
+You will also need raylib 5.0, which can be found on the [](raylib website), although I reccommend finding the binaries in the [https://github.com/raysan5/raylib/releases](github releases page) and installing them in the same directory as this folder. My file structure looks like this:
+
+```
+*-- LARUTAN
+|
+\-- src/
+\-- raylib-5.0\
+   |
+   \-- lib/
+      |
+      \-- libraylib.so.500
+      \-- ...
+   \-- include
+   \-- ...
+\-- ...
+```
+
+If you installed raylib under a different name then edit the makefile to take this into account, change the variable ```RAYLIB_LIBRARY_SEARCH_PATH``` to the name of your folder containing raylib binaries. If you installed c3 into this directory, then set the ```C3_STD``` variable to be empty. 
+
+Then just run make and hope for the best. Linker errors will be something to do with the folders being called the wrong thing. If you can't get it to work, try just using c3c. 
+
+Your command should look something like this:
+
+```
+user$ c3c compile-run src/*.c3 -lraylib -L<your path to raylib's binaries>
+```
+
+If you have any further issues, please open an issue.
+
+# NOTES
+
+The project is in its very early stages... not many things work but the very basic engine. Plans are to optimise (very slow) and add real gameplay, notably using weapons, picking up weapons, enemy ai that works, and a physics implementation that isn't simply: 'try everything against everything else and hope for the best.' Thank you for your patience. 
+
+# CREDITS
+
+Credit for brick wall texture: [https://www.the3rdsequence.com/texturedb/texture/9/brick+wall/](TODO: find this person's name)
+
+TODO: 
+ - Version française.
