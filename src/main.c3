@@ -9,6 +9,7 @@ import std::collections::list;
 import raylib;
 import rendering;
 import math;
+import room_gen;
 
 def SpriteList = List(<Sprite*>);
 def EntityList = List(<Entity>);
@@ -461,6 +462,9 @@ fn void player_attack(World* world, EntityList* ents, Player* player, bool altfi
 }
 
 fn int main() {
+	// FIXME: prototype
+	room_gen::generate_rooms();
+
 	raylib::init_window(WINDOW_WIDTH, WINDOW_HEIGHT, "hello from c3");
 	defer raylib::close_window();
 
