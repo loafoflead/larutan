@@ -15,6 +15,8 @@ def SpriteList = List(<Sprite*>);
 def EntityList = List(<Entity>);
 def IndexList = List(<usz>);
 
+def ImageList = List(<Image>);
+
 const Colour RED = {255, 0, 0, 255};
 const Colour WHITE = {255, 255, 255, 255};
 const Colour BACKGROUND_COL = {0x18, 0x18, 0x18, 0xFF};
@@ -25,6 +27,8 @@ const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can col
 
 const float PLAYER_ACCELERATION = 50.0; // Grid squares per second
 const float PLAYER_VEL_DAMPING = 0.9;
+
+const float MINIMUM_MOVEMENT_THRESHOLD = 0.01; // sq metres per second (squared?)
 
 const float PLAYER_TURN_ACCELERATION = math::PI_2; // RADIANS per second per second
 const float PLAYER_TURN_DAMPING = 0.7; // RADIANS per second
@@ -47,10 +51,10 @@ fn bool Weapon.has_altfire(Weapon weapon) {
 	}
 }
 
-const int WIDTH_FACTOR = 16;
-const int HEIGHT_FACTOR = 9;
+const int WIDTH_FACTOR = 4;
+const int HEIGHT_FACTOR = 3;
 const int WINDOW_SCALING_FACTOR = 100;
-const float RENDER_SCREEN_PERCENT = 0.5;
+const float RENDER_SCREEN_PERCENT = 0.6;
 
 const uint RENDER_WINDOW_WIDTH = (uint)((float)(WIDTH_FACTOR * WINDOW_SCALING_FACTOR) * RENDER_SCREEN_PERCENT);
 const uint RENDER_WINDOW_HEIGHT = (uint)((float)(HEIGHT_FACTOR * WINDOW_SCALING_FACTOR) * RENDER_SCREEN_PERCENT);
@@ -85,49 +89,24 @@ const usz SPRITE_TEXTURES_COUNT = 1;
 const usz WEAPON_TEXTURES_COUNT = 1;
 
 struct Assets {
-	Image* world_textures;
-	Image* sprite_textures;
-	Image* weapon_textures;
+	ImageList world_textures;
+	ImageList sprite_textures;
+	ImageList weapon_textures;
 	Image missing;
 }
 
-macro Assets.@get(&self, category, idx) {
-	switch (category) {
-		case "ws":
-		case "weapons":
-			if (idx < 0 || idx >= WEAPON_TEXTURES_COUNT) return &self.missing;
-
-			return &self.weapon_textures[idx];
-		break;
-		case "w":
-		case "wrld":
-		case "world":
-			if (idx < 0 || idx >= WORLD_TEXTURES_COUNT) return &self.missing;
-
-			return &self.world_textures[idx];
-		break;
-		case "s":
-		case "sprite":
-			if (idx < 0 || idx >= SPRITE_TEXTURES_COUNT) return &self.missing;
-
-			return &self.sprite_textures[idx];
-		break;
-		default:
-			return &self.missing;
-	}
-	return &self.missing;
-}
-
-fn Image* Assets.load_images(Assets this, String[] paths) {
-
+fn ImageList Assets.load_images(Assets this, String[] paths) {
+	ImageList images;
+	images.new_init();
 	io::printn("TODO: don't do this, make it similar to the '@get' interface, and make the sizes not be constants because that's a bit schewpid in the year of our lord twenty twenty four");
 
 	foreach (path: paths) {
+		images.push(raylib::load_image(path));
 		// TODO: don't do this, make it similar to the '@get'
 		// interface, and make the sizes not be constants because that's a 
 		// bit schewpid in the year of our lord twenty twenty four
 	}
-	return null;
+	return images;
 }
 
 fn void Assets.free(Assets this) {
@@ -275,6 +254,8 @@ struct Player {
 	float dir_vel;
 	// inv
 	Weapon gun;
+	// flags
+	bool moving;
 }
 
 fn Rect Player.centred_hitbox(Player* this) {
@@ -434,6 +415,35 @@ fn void update_world_occupied_cells(World* world, EntityList entities, Player* p
 	world.occupied_cells.push(player_map_pos.y * MAP_WIDTH + player_map_pos.x);
 }
 
+// FIXME: weird hardcoded values extravaganza!
+fn void player_display_held(Player* player, Assets* assets, Texture* tex, Weapon prev) {
+	if (player.gun != prev) {
+		Image* img = &assets.weapon_textures[(usz)player.gun - 1];
+		if (img == null) img = &assets.missing;
+		*tex = raylib::load_texture_from_image(*img);
+	}
+	if (tex == null) return;
+
+	int gun_x = 0;//WINDOW_WIDTH / 2 + tex.width;
+	int gun_y = player.moving ? (int)(math::sin((float)(raylib::get_time() % 360)*10) * player.body.vel.length()) : 0;
+
+	switch (player.gun) {
+		case Weapon.PISTOL:
+			raylib::draw_texture_with_params(
+				*tex, 
+				NPatchInfo {
+					.source = { 0, 0, tex.width, tex.height },
+				},
+				{0, (float)(gun_y + tex.height / 6), WINDOW_WIDTH, WINDOW_HEIGHT},
+				{gun_x, gun_y},
+				0.0,
+				WHITE
+			);
+		break;
+		default:
+		break;
+	}
+}
 
 // Fire is alt or main
 fn void player_attack(World* world, EntityList* ents, Player* player, bool altfired) {
@@ -444,7 +454,7 @@ fn void player_attack(World* world, EntityList* ents, Player* player, bool altfi
 
 	switch(player.gun) {
 
-		case PISTOL:
+		case Weapon.PISTOL:
 			if (world.ray_hits(player.pos, player.dir.angle_to_cart(), ents)) {
 				io::printn("Raycast hits");
 			}
@@ -514,12 +524,12 @@ fn int main() {
 	for (int i = 0; i < MAP_HEIGHT; ++i) {
 		for (int j = 0; j < MAP_WIDTH; ++j) {
 			if (i == 0 && j != 0 || i == j) {
-				world.map[(i * MAP_WIDTH + j)] = 3;
+				world.map[(i * MAP_WIDTH + j)] = 2;
 			}
 		}
 	}
 
-	world.map[5 * MAP_WIDTH + 1] = 3;
+	world.map[5 * MAP_WIDTH + 1] = 1;
 	Player player = Player {
 		.pos = {3.0 * MAP_GRID_SIZE, 6.0f * MAP_GRID_SIZE},
 		.body = new_body(PLAYER_SIDE_LENGTH, PLAYER_SIDE_LENGTH),
@@ -527,7 +537,10 @@ fn int main() {
 		.dir = math::PI,
 		.dir_vel = 0.0,
 		.gun = NONE,
+		.moving = false,
 	};
+	Weapon player_prev_gun = Weapon.NONE;
+	Texture player_gun_tex;
 
 	SpriteList sprites_to_render;
 
@@ -537,7 +550,7 @@ fn int main() {
 		Entity {
 			.type = EntityType.INDESTRUCTIBLE_DECORATION,
 			.pos = {2, 3},
-			.sprite = new_sprite(2, 0, {1.0, 1.0}),
+			.sprite = new_sprite(0, 0, {1.0, 1.0}),
 			.body = new_body(1, 1),
 			.dead = false,
 		}
@@ -547,7 +560,7 @@ fn int main() {
 		Entity {
 			.type = EntityType.PICKUP,
 			.pos = {5, 7},
-			.sprite = new_sprite(3, 0, {0.5, 1.0}),
+			.sprite = new_sprite(1, 0, {0.5, 1.0}),
 			.body = new_body(1, 1),
 			.dead = false,
 		}
@@ -655,8 +668,9 @@ fn int main() {
 		// ---------------------------------------------------------------------
 
 		if (player.gun != Weapon.NONE) {
-
+			player_display_held(&player, &assets, &player_gun_tex, player_prev_gun);
 		}
+		player_prev_gun = player.gun;
 
 		raylib::end_drawing();
 
@@ -711,6 +725,14 @@ fn int main() {
 		player.dir_vel *= PLAYER_TURN_DAMPING;
 
 		update_entities(&entities, &player);
+
+		if (player.body.vel.length_sq() < MINIMUM_MOVEMENT_THRESHOLD) {
+			player.body.vel = {0,0};
+			player.moving = false;
+		}
+		else {
+			player.moving = true;
+		}
 
 		foreach (&ent : entities) {
 			if (ent.type == EntityType.FOLLOWER) {

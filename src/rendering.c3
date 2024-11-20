@@ -148,10 +148,11 @@ fn void raycast_walls(Player* player, MapCell* map, Assets* assets, Colour* pixe
 
 		if (map[map_index] != 0) z_buffer[i] = perp_wall_dist;
 		int texture_index = map[map_index];
-		if (texture_index <= main::TEXTURE_COUNT) {
+		if (texture_index <= assets.world_textures.len()) {
 			texture_index--;
 
-			Image *texture = assets.@get("w", texture_index);
+			Image* texture = &assets.world_textures[texture_index];
+			if (texture == null) texture = &assets.missing;
 			double wall_x = 0.0;
 
 			if (side == 0) {
@@ -246,12 +247,15 @@ fn void raycast_floors(Player* player, MapCell* map, Assets* assets, Colour* pix
 			int ceiling_tex_idx = 1;
 
 			if (cell.x % 2 == 0 && cell.y % 2 == 0) {
-				floor_tex_idx = 1;	
+				floor_tex_idx = 0;	
+				ceiling_tex_idx = 0;
 			}
-			Image* floor_texture = assets.@get("w", floor_tex_idx);
-			Image* ceiling_texture = assets.@get("w", ceiling_tex_idx);
 
-			// TODO: calculate separately for different sized floor & ceiling textures
+			Image* floor_texture = &assets.world_textures[floor_tex_idx];
+			Image* ceiling_texture = &assets.world_textures[ceiling_tex_idx];
+			if (ceiling_texture == null) ceiling_texture = &assets.missing;
+			if (floor_texture == null) floor_texture = &assets.missing;
+
 			int[<2>] tex_pos = {
 				(int)(floor_texture.width * (floor_pos.x - cell.x)) & (floor_texture.width - 1),
 				(int)(floor_texture.height * (floor_pos.y - cell.y)) & (floor_texture.height - 1),
@@ -277,6 +281,11 @@ fn void raycast_floors(Player* player, MapCell* map, Assets* assets, Colour* pix
 				pixels[y * main::RENDER_WINDOW_WIDTH + x] = col;
 			}
 			//pixels[y][x] = col;
+
+			tex_pos = {
+				(int)(ceiling_texture.width * (floor_pos.x - cell.x)) & (ceiling_texture.width - 1),
+				(int)(ceiling_texture.height * (floor_pos.y - cell.y)) & (ceiling_texture.height - 1),
+			};
 			
 			col = ceiling_texture.data[ceiling_texture.width * tex_pos.y + tex_pos.x];
 			if (FADEOUT) {
@@ -349,7 +358,8 @@ fn void render_sprites(Player* player, SpriteList* sprites, Assets* assets, Colo
 			draw_end_x = main::RENDER_WINDOW_WIDTH - 1;
 		}
 		
-		Image* tex = assets.@get("sprite", sprite.texture_index);
+		Image* tex = &assets.sprite_textures[sprite.texture_index];
+		if (tex == null) tex = &assets.missing;
 
 		for (int stripe = draw_start_x; stripe < draw_end_x; stripe++) {
 			int tex_x = (int) (256 * (stripe - (-sprite_width / 2 + sprite_screen_x)) * tex.width / sprite_width) / 256;

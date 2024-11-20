@@ -57,6 +57,8 @@ extern fn void draw_grid(int slices, float spacing) @extern("DrawGrid");        
 
 
 extern fn float get_frame_time() @extern("GetFrameTime"); 
+extern fn double get_time() @extern("GetTime");                                       // Get elapsed time in seconds since InitWindow()
+
 extern fn void set_target_fps(int max_fps) @extern("SetTargetFPS");
 
 extern fn bool is_key_pressed(int key) @extern("IsKeyPressed");
