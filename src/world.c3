@@ -1,0 +1,84 @@
+import std::collections::list;
+import math;
+import std::math::vector;
+import entity;
+import player;
+import rendering;
+
+const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.05;
+
+def MapCell = short;
+def IndexList = List(<usz>);
+
+const uint MAP_WIDTH = 30;
+const uint MAP_HEIGHT = MAP_WIDTH;
+const Rect MAP_RECT = Rect { 0, 0, MAP_WIDTH, MAP_HEIGHT };
+
+struct World {
+	MapCell* map;
+	// list of cells that have a sprite in them, so that when raycasting into 
+	// the world we can check if we hit a sprite when entering 
+	// a cell. (presumably (haven't implemented yet) this is gonna have 
+	// similar bug as in doom where you won't raycast hit a bit sprite bc it overlaps
+	// collision 'sectors')
+	IndexList occupied_cells;
+}
+
+fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
+	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
+
+	// just checking if it hit or not...
+	if (hit.hit) return true;
+
+	// check for entities and stuff now
+	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
+	defer free(temp_map);
+
+	foreach(cell: this.occupied_cells) {
+		temp_map[cell] = 1;
+	}
+
+	// check if a cell that contains an entity is hit with a raycast
+	hit = rendering::cast_ray(temp_map, og, dir);
+
+	if (hit.hit) {
+		// FIXME: extremely naive and frankly shit implementation
+		Vec2 hit_pt = og + dir * hit.dist;
+
+		foreach(ent:ents) {
+			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
+				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
+					return true;
+				}
+				hit_pt += MAP_AABB_RAYCAST_CHECK_RAY_STEP * dir;
+			}
+		}
+	}
+
+	return false;
+}
+
+fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
+	world.occupied_cells.clear();
+	// TODO: shit
+	for (int y = 0; y < MAP_HEIGHT; y ++) {
+		for (int x = 0; x < MAP_WIDTH; x++) {
+			Rect rect = {x, y, 1, 1};
+
+			foreach(&ent: entities) {
+				if (!MAP_RECT.contains(ent.pos.round())) continue;
+
+				if (rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
+					if (!world.occupied_cells.contains((ulong)(y * MAP_WIDTH + x))) {
+						world.occupied_cells.push((ulong)(y * MAP_WIDTH + x));
+					}
+				}
+			}
+		}
+	}
+
+	if (!MAP_RECT.contains(player.pos.round())) return;
+
+	usz[<2>] player_map_pos = (usz[<2>])player.pos.round();
+	world.occupied_cells.push(player_map_pos.y * MAP_WIDTH + player_map_pos.x);
+}

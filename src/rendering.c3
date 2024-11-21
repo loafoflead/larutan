@@ -1,5 +1,9 @@
 import std::math;
 import main;
+import world;
+import player;
+import assets;
+import sprite;
 import raylib;
 import std::sort;
 
@@ -71,7 +75,7 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 		}
 
 
-		if (map[map_y * main::MAP_WIDTH + map_x] > 0) {
+		if (map[map_y * world::MAP_WIDTH + map_x] > 0) {
 			hit = true;
 		}
 
@@ -83,7 +87,7 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 			break;
 		}
 
-		if (map_x >= main::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= main::MAP_HEIGHT) {
+		if (map_x >= world::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= world::MAP_HEIGHT) {
 			hit = false;
 			continue;
 		}	
@@ -94,7 +98,7 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 		return RaycastHit { 0, 0, {0, 0}, false };
 	}
 	
-	if (map_x >= main::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= main::MAP_HEIGHT) {
+	if (map_x >= world::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= world::MAP_HEIGHT) {
 		return RaycastHit { math::DOUBLE_MAX, 0, {0, 0}, false };
 	}
 	
@@ -144,7 +148,7 @@ fn void raycast_walls(Player* player, MapCell* map, Assets* assets, Colour* pixe
 			draw_end = main::RENDER_WINDOW_HEIGHT - 1;
 		}
 
-		int map_index = hit.map_pos.y * main::MAP_WIDTH + hit.map_pos.x;
+		int map_index = hit.map_pos.y * world::MAP_WIDTH + hit.map_pos.x;
 
 		if (map[map_index] != 0) z_buffer[i] = perp_wall_dist;
 		int texture_index = map[map_index];

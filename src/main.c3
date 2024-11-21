@@ -10,46 +10,21 @@ import raylib;
 import rendering;
 import math;
 import room_gen;
+import world;
+import assets;
+import entity;
+import sprite;
+import player;
 
-def SpriteList = List(<Sprite*>);
-def EntityList = List(<Entity>);
-def IndexList = List(<usz>);
 
-def ImageList = List(<Image>);
 
 const Colour RED = {255, 0, 0, 255};
 const Colour WHITE = {255, 255, 255, 255};
 const Colour BACKGROUND_COL = {0x18, 0x18, 0x18, 0xFF};
 
-const float PLAYER_SIDE_LENGTH = 0.2f;
-const usz NUM_COLLISION_NEIGHBOURS = 9;
-const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can collide with outside of 9 neighbours
-
-const float PLAYER_ACCELERATION = 50.0; // Grid squares per second
-const float PLAYER_VEL_DAMPING = 0.9;
-
-const float MINIMUM_MOVEMENT_THRESHOLD = 0.01; // sq metres per second (squared?)
-
-const float PLAYER_TURN_ACCELERATION = math::PI_2; // RADIANS per second per second
-const float PLAYER_TURN_DAMPING = 0.7; // RADIANS per second
-
 const double FOV_ANGLE = 30 * (math::PI/180);//math::PI/2.0;
 const double PITCH_ANGLE = 0.66;
 
-enum Weapon : int (String sprite_path)
-{
-	NONE = "assets/missing.png",
-	PISTOL = "assets/weapons/pistol.png",
-}
-
-fn bool Weapon.has_altfire(Weapon weapon) {
-	switch(weapon) {
-		case PISTOL:
-			return false;
-		default:
-			return false;
-	}
-}
 
 const int WIDTH_FACTOR = 4;
 const int HEIGHT_FACTOR = 3;
@@ -62,20 +37,9 @@ const uint RENDER_WINDOW_HEIGHT = (uint)((float)(HEIGHT_FACTOR * WINDOW_SCALING_
 const uint WINDOW_WIDTH = WIDTH_FACTOR * WINDOW_SCALING_FACTOR;
 const uint WINDOW_HEIGHT = HEIGHT_FACTOR * WINDOW_SCALING_FACTOR;
 
-
-def MapCell = short;
-const uint MAP_WIDTH = 30;
-const uint MAP_HEIGHT = MAP_WIDTH;
-const Rect MAP_RECT = Rect { 0, 0, MAP_WIDTH, MAP_HEIGHT };
-
-const uint MAP_GRID_SIZE = 1;
 const float MINIMAP_SCALE_FACTOR = 50.0;
-const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.05;
-
 const uint COLUMN_PIXEL_WIDTH = 1;
 const uint PIXEL_HEIGHT = 1;
-
-const uint TEXTURE_COUNT = 1;
 
 // DEBUG
 
@@ -83,190 +47,6 @@ bool draw_minimap = false;
 bool draw_floor_and_ceiling = true;
 
 //------
-
-const usz WORLD_TEXTURES_COUNT = 1;
-const usz SPRITE_TEXTURES_COUNT = 1;
-const usz WEAPON_TEXTURES_COUNT = 1;
-
-struct Assets {
-	ImageList world_textures;
-	ImageList sprite_textures;
-	ImageList weapon_textures;
-	Image missing;
-}
-
-fn ImageList Assets.load_images(Assets this, String[] paths) {
-	ImageList images;
-	images.new_init();
-	io::printn("TODO: don't do this, make it similar to the '@get' interface, and make the sizes not be constants because that's a bit schewpid in the year of our lord twenty twenty four");
-
-	foreach (path: paths) {
-		images.push(raylib::load_image(path));
-		// TODO: don't do this, make it similar to the '@get'
-		// interface, and make the sizes not be constants because that's a 
-		// bit schewpid in the year of our lord twenty twenty four
-	}
-	return images;
-}
-
-fn void Assets.free(Assets this) {
-	io::printfn("TODO: IMPLEMENT FREEING ASSETS");
-
-	//for (int i = 0; i < TEXTURE_COUNT; i ++) raylib::unload_image(textures[i]);
-
-}
-
-fn bool Assets.assert_loaded(Assets this) {
-	io::printfn("TODO: IMPLEMENT CHECKING ASSETS LOADED CORRECTLY");
-
-	return true;
-	//for (int i = 0; i < TEXTURE_COUNT; i ++) {
-	//	if (textures[i].data == null) {
-	//		io::printfn("Failed to load '%s', file not found or corrupt.", image_paths[i ]);
-	//		return -1;
-	//	}
-	//	else if (textures[i].format != 7) {
-	//		io::printfn("Failed to load '%s', file is in the wrong pixel format (need R8G8B8A8, soit 32bpp)\n", image_paths[i]);
-	//		return -1;
-	//	}
-	//}
-}
-
-struct World {
-	MapCell* map;
-	// list of cells that have a sprite in them, so that when raycasting into 
-	// the world we can check if we hit a sprite when entering 
-	// a cell. (presumably (haven't implemented yet) this is gonna have 
-	// similar bug as in doom where you won't raycast hit a bit sprite bc it overlaps
-	// collision 'sectors')
-	IndexList occupied_cells;
-}
-
-fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
-	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
-
-	// just checking if it hit or not...
-	if (hit.hit) return true;
-
-	// check for entities and stuff now
-	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
-	defer free(temp_map);
-
-	foreach(cell: this.occupied_cells) {
-		temp_map[cell] = 1;
-	}
-
-	// check if a cell that contains an entity is hit with a raycast
-	hit = rendering::cast_ray(temp_map, og, dir);
-
-	if (hit.hit) {
-		// FIXME: extremely naive and frankly shit implementation
-		Vec2 hit_pt = og + dir * hit.dist;
-
-		foreach(ent:ents) {
-			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
-				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
-					return true;
-				}
-				hit_pt += MAP_AABB_RAYCAST_CHECK_RAY_STEP * dir;
-			}
-		}
-	}
-
-	return false;
-}
-
-struct Sprite {
-	usz texture_index;
-	Vec2 uv_scale_division;
-	double z;
-	// effectively private variables
-	Vec2 pos;
-	double player_dist;
-}
-
-fn Sprite new_sprite(usz texture_index, double z, Vec2 uv_scale_division) {
-	Sprite new = Sprite {
-		.texture_index = texture_index,
-		.z = z,
-		.uv_scale_division = uv_scale_division,
-		.pos = {0, 0},
-		.player_dist = 0.0,
-	};
-	return new;
-}
-
-struct Body {
-	bool simulated;
-	bool collides;
-	Vec2 vel;
-	Vec2 acc;
-	Vec2 scale; // every hitbox is a rectangle or a box, so we just need width and height
-				// to create a hitbox centred on Entity.pos
-}
-
-fn Body new_body(double w, double h) {
-	Body body = Body {
-		.simulated = true,
-		.collides = true,
-		.vel = {0.0, 0.0},
-		.acc = {0.0, 0.0},
-		.scale = {w, h},
-	};
-	return body;
-}
-
-fn Rect Body.centred_box(Body* this, Vec2 pos) {
-	Rect rect = {
-		(float)pos.x - (float)this.scale.x / 2.0,
-		(float)pos.y - (float)this.scale.y / 2.0,
-		(float)this.scale.x,
-		(float)this.scale.y,
-	};
-	return rect;
-}
-
-struct Entity {
-	Sprite sprite;
-	Vec2 pos;
-	EntityType type;
-	Body body;
-	bool dead;
-}
-
-fn Sprite* Entity.get_sprite(Entity* this) {
-	this.sprite.pos = this.pos;
-	return &this.sprite;
-}
-
-enum EntityType {
-	INDESTRUCTIBLE_DECORATION,
-	PICKUP,
-	FOLLOWER,
-}
-
-struct Player {
-	Vec2 pos;
-	Body body;
-	Vec2 camera_plane;
-	// in radians
-	float dir;
-	float dir_vel;
-	// inv
-	Weapon gun;
-	// flags
-	bool moving;
-}
-
-fn Rect Player.centred_hitbox(Player* this) {
-	Rect rect = {
-		(float)this.pos.x - PLAYER_SIDE_LENGTH / 2.0f,
-		(float)this.pos.y - PLAYER_SIDE_LENGTH / 2.0f,
-		PLAYER_SIDE_LENGTH,
-		PLAYER_SIDE_LENGTH,
-	};
-	return rect;
-}
 
 fn Vec2 float.angle_to_cart(float this) {
 	return {math::cos(this), math::sin(this)};
@@ -278,198 +58,6 @@ fn Vec2 double.angle_to_cart(double this) {
 
 usz time = 0;
 
-fn void update_entities(EntityList* entities, Player* player) {
-	foreach (&ent : *entities) {
-		if (ent.dead) continue;
-		switch (ent.type) {
-			case EntityType.INDESTRUCTIBLE_DECORATION: break;
-			case EntityType.PICKUP:
-				if (ent.body.collides == true || ent.body.simulated) {
-					ent.body.collides = false;
-					ent.body.simulated = false;
-				}
-				ent.sprite.z = math::sin(time / 20.0) * 100;
-				if (ent.body.centred_box(ent.pos).contains_rect(player.centred_hitbox())) {
-					ent.dead = true;
-					player.gun = PISTOL;
-					io::printfn("TODO: implement picking up items.");
-				}
-			break;
-			case EntityType.FOLLOWER:
-				Vec2 to_player = player.pos - ent.pos;
-				ent.body.vel += to_player * raylib::get_frame_time() * 10;
-			break;
-			default:
-				io::printfn("WARNING: ENTITY TYPE NOT IMPLEMENTED: %d", ent.type);
-				break;
-		}
-	}
-}
-
-fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Body body, Entity* this) {
-	Vec2 final_pos = pos;
-	Vec2 vel = body.vel;
-
-	int[<2>] map_pos = (int[<2>])(pos / MAP_GRID_SIZE);
-
-	Vec2 next_pos = pos + body.vel * raylib::get_frame_time();
-	// don't check for map collisions outside of the map 
-	// TODO: (add one to avoid clipping into stuff from outside)
-	if (next_pos.x / MAP_GRID_SIZE <= MAP_WIDTH && next_pos.x >= 0 && next_pos.y / MAP_GRID_SIZE <= MAP_HEIGHT && next_pos.y >= 0) {
-		Rect[NUM_COLLISION_NEIGHBOURS + NUM_ADDITIONAL_COLLISION_RECT] rects;
-
-		// loop in the 9 neighbouring squares and check which aren't empty 
-		// to fill in rects array.
-		for (int y = -1; y <= 1; y ++) {
-			if (y + map_pos.y < 0 || y + map_pos.y >= MAP_HEIGHT) continue;
-
-			for (int x = -1; x <= 1; x ++) {
-				if (x + map_pos.x < 0 || x + map_pos.x >= MAP_WIDTH) continue;
-
-				if (map[(map_pos.y + y) * MAP_WIDTH + (map_pos.x + x)] > 0) {
-					rects[(y + 1) * 3 + (x + 1)] = {(float)((map_pos.x + x) * MAP_GRID_SIZE), (float)((map_pos.y + y) * MAP_GRID_SIZE), MAP_GRID_SIZE, MAP_GRID_SIZE};
-				}
-				else {
-					rects[(y + 1) * 3 + (x + 1)] = {(float)((map_pos.x + x) * MAP_GRID_SIZE), (float)((map_pos.y + y) * MAP_GRID_SIZE), 0, 0};
-				}
-			}
-		}
-
-		for (int i = NUM_COLLISION_NEIGHBOURS; i < NUM_COLLISION_NEIGHBOURS + NUM_ADDITIONAL_COLLISION_RECT; i ++) {
-			//foreach (&ent : entities) ent.sprite.player_dist = ent.pos.distance(pos);
-			// TODO: maybe rename player_dist? it doesn't make a lot of sense in this situation
-			//sort::quicksort(entities, fn int(Entity* a, Entity* b) => (int)((b.sprite.player_dist - a.sprite.player_dist) * 1000.0));
-			
-			Entity* ent = entities.get_ref(i - NUM_COLLISION_NEIGHBOURS);
-			if (ent != null && ent.body.collides == true && !ent.dead && ent != this) {
-				rects[i] = ent.body.centred_box(ent.pos);
-			}
-		}
-
-		bool[<2>] can_advance = {true, true};
-
-		for (int i = 0; i < NUM_COLLISION_NEIGHBOURS + NUM_ADDITIONAL_COLLISION_RECT; i ++) {
-			if (rects[i].w == 0) continue; // BTEC Rust options :P
-
-			raylib::draw_rectangle((int)(rects[i].x * MINIMAP_SCALE_FACTOR), (int)(rects[i].y * MINIMAP_SCALE_FACTOR), (int)(rects[i].w * MINIMAP_SCALE_FACTOR), (int)(rects[i].h * MINIMAP_SCALE_FACTOR), RED);
-
-			Rect next_hitbox = {(float)(next_pos.x - PLAYER_SIDE_LENGTH / 2.0), (float)(next_pos.y - PLAYER_SIDE_LENGTH / 2.0), (float)PLAYER_SIDE_LENGTH, (float)PLAYER_SIDE_LENGTH};
-
-			if (rects[i].contains_rect(next_hitbox)) {
-				Rect intersection = rects[i].intersection(next_hitbox);
-
-				vel.x = (double)(intersection.w);
-				vel.y = (double)(intersection.h);
-			}
-
-			double next_x = pos.x + body.vel.x * raylib::get_frame_time();
-			Rect x_hitbox = {(float)(next_x - PLAYER_SIDE_LENGTH / 2.0), (float)(pos.y - PLAYER_SIDE_LENGTH / 2.0), (float)PLAYER_SIDE_LENGTH, (float)PLAYER_SIDE_LENGTH};
-			if (rects[i].contains_rect(x_hitbox)) {
-				can_advance.x = false;
-			}
-
-			double next_y = pos.y + body.vel.y * raylib::get_frame_time();
-			Rect y_hitbox = {(float)(pos.x - PLAYER_SIDE_LENGTH / 2.0), (float)(next_y - PLAYER_SIDE_LENGTH / 2.0), (float)PLAYER_SIDE_LENGTH, (float)PLAYER_SIDE_LENGTH};
-			if (rects[i].contains_rect(y_hitbox)) {
-				can_advance.y = false;
-			}
-		}
-
-		//can_advance = {true, true};
-		double next_x = pos.x + body.vel.x * raylib::get_frame_time();
-		double next_y = pos.y + body.vel.y * raylib::get_frame_time();
-
-		if (can_advance.x) final_pos.x = next_x;
-		if (can_advance.y) final_pos.y = next_y;
-	}
-	else {
-		final_pos = next_pos;
-	}
-
-	// TODO: return vel
-	return final_pos;
-}
-
-fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
-	world.occupied_cells.clear();
-	// TODO: shit
-	for (int y = 0; y < MAP_HEIGHT; y ++) {
-		for (int x = 0; x < MAP_WIDTH; x++) {
-			Rect rect = {x, y, 1, 1};
-
-			foreach(&ent: entities) {
-				if (!MAP_RECT.contains(ent.pos.round())) continue;
-
-				if (rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
-					if (!world.occupied_cells.contains((ulong)(y * MAP_WIDTH + x))) {
-						world.occupied_cells.push((ulong)(y * MAP_WIDTH + x));
-					}
-				}
-			}
-		}
-	}
-
-	if (!MAP_RECT.contains(player.pos.round())) return;
-
-	usz[<2>] player_map_pos = (usz[<2>])player.pos.round();
-	world.occupied_cells.push(player_map_pos.y * MAP_WIDTH + player_map_pos.x);
-}
-
-// FIXME: weird hardcoded values extravaganza!
-fn void player_display_held(Player* player, Assets* assets, Texture* tex, Weapon prev) {
-	if (player.gun != prev) {
-		Image* img = &assets.weapon_textures[(usz)player.gun - 1];
-		if (img == null) img = &assets.missing;
-		*tex = raylib::load_texture_from_image(*img);
-	}
-	if (tex == null) return;
-
-	int gun_x = 0;//WINDOW_WIDTH / 2 + tex.width;
-	int gun_y = player.moving ? (int)(math::sin((float)(raylib::get_time() % 360)*10) * player.body.vel.length()) : 0;
-
-	switch (player.gun) {
-		case Weapon.PISTOL:
-			raylib::draw_texture_with_params(
-				*tex, 
-				NPatchInfo {
-					.source = { 0, 0, tex.width, tex.height },
-				},
-				{0, (float)(gun_y + tex.height / 6), WINDOW_WIDTH, WINDOW_HEIGHT},
-				{gun_x, gun_y},
-				0.0,
-				WHITE
-			);
-		break;
-		default:
-		break;
-	}
-}
-
-// Fire is alt or main
-fn void player_attack(World* world, EntityList* ents, Player* player, bool altfired) {
-	// if altfiring a gun w/ no altfire, don't shoot (don't shoot!!)
-	if ((altfired && !player.gun.has_altfire()) || player.gun == Weapon.NONE) return; 
-
-	if (!altfired) {
-
-	switch(player.gun) {
-
-		case Weapon.PISTOL:
-			if (world.ray_hits(player.pos, player.dir.angle_to_cart(), ents)) {
-				io::printn("Raycast hits");
-			}
-			else {
-				io::printn("Raycast MISSES");
-			}
-		break;
-
-		default:
-			io::printfn("ERROR: attempt to fire weapon that has not yet been implemented. (Sprite: %s)", player.gun.sprite_path);
-		break;
-	}
-
-	}
-}
 
 fn int main() {
 	// FIXME: prototype
@@ -481,7 +69,7 @@ fn int main() {
 	raylib::set_target_fps(60);
 
 	World world;
-	world.map = (MapCell*)calloc(MAP_WIDTH * MAP_HEIGHT * MapCell.sizeof);
+	world.map = (MapCell*)calloc(world::MAP_WIDTH * world::MAP_HEIGHT * MapCell.sizeof);
 
 	Assets assets;
 	assets.missing = raylib::load_image("assets/missing.png");
@@ -521,18 +109,18 @@ fn int main() {
 
 
 
-	for (int i = 0; i < MAP_HEIGHT; ++i) {
-		for (int j = 0; j < MAP_WIDTH; ++j) {
+	for (int i = 0; i < world::MAP_HEIGHT; ++i) {
+		for (int j = 0; j < world::MAP_WIDTH; ++j) {
 			if (i == 0 && j != 0 || i == j) {
-				world.map[(i * MAP_WIDTH + j)] = 2;
+				world.map[(i * world::MAP_WIDTH + j)] = 2;
 			}
 		}
 	}
 
-	world.map[5 * MAP_WIDTH + 1] = 1;
+	world.map[5 * world::MAP_WIDTH + 1] = 1;
 	Player player = Player {
-		.pos = {3.0 * MAP_GRID_SIZE, 6.0f * MAP_GRID_SIZE},
-		.body = new_body(PLAYER_SIDE_LENGTH, PLAYER_SIDE_LENGTH),
+		.pos = {3.0, 6.0f},
+		.body = entity::new_body(player::PLAYER_SIDE_LENGTH, player::PLAYER_SIDE_LENGTH),
 		.camera_plane = {0.0, 0.66},
 		.dir = math::PI,
 		.dir_vel = 0.0,
@@ -550,8 +138,8 @@ fn int main() {
 		Entity {
 			.type = EntityType.INDESTRUCTIBLE_DECORATION,
 			.pos = {2, 3},
-			.sprite = new_sprite(0, 0, {1.0, 1.0}),
-			.body = new_body(1, 1),
+			.sprite = sprite::new_sprite(0, 0, {1.0, 1.0}),
+			.body = entity::new_body(1, 1),
 			.dead = false,
 		}
 	);
@@ -560,8 +148,8 @@ fn int main() {
 		Entity {
 			.type = EntityType.PICKUP,
 			.pos = {5, 7},
-			.sprite = new_sprite(1, 0, {0.5, 1.0}),
-			.body = new_body(1, 1),
+			.sprite = sprite::new_sprite(1, 0, {0.5, 1.0}),
+			.body = entity::new_body(1, 1),
 			.dead = false,
 		}
 	);
@@ -621,9 +209,9 @@ fn int main() {
 		// ---------------------------------------------------------------------
 
 		if (draw_minimap) {
-			for (int y = 0; y < MAP_HEIGHT; y ++) {
-				for (int x = 0; x < MAP_WIDTH; x ++) {
-					if (world.map[y * MAP_WIDTH + x] > 0) {
+			for (int y = 0; y < world::MAP_HEIGHT; y ++) {
+				for (int x = 0; x < world::MAP_WIDTH; x ++) {
+					if (world.map[y * world::MAP_WIDTH + x] > 0) {
 						raylib::draw_rectangle(x * (int)MINIMAP_SCALE_FACTOR, y * (int)MINIMAP_SCALE_FACTOR, (int)MINIMAP_SCALE_FACTOR, (int)MINIMAP_SCALE_FACTOR, {200, 200, 200, 100});
 					}
 				}
@@ -634,10 +222,10 @@ fn int main() {
 		if (draw_minimap) {
 			Vec2 pos = (player.pos * MINIMAP_SCALE_FACTOR);
 			raylib::draw_rectangle(
-				(int)((pos.x - PLAYER_SIDE_LENGTH/2)), 
-				(int)((pos.y - PLAYER_SIDE_LENGTH/2)), 
-				(int)(PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
-				(int)(PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
+				(int)((pos.x - player::PLAYER_SIDE_LENGTH/2)), 
+				(int)((pos.y - player::PLAYER_SIDE_LENGTH/2)), 
+				(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
+				(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
 				{255, 255, 0, 255}
 			);
 			// raylib::draw_line_ex(player.pos, (player.pos + player.dir.angle_to_cart() * 100.0), 5.0, {255, 0, 0, 255});
@@ -668,7 +256,7 @@ fn int main() {
 		// ---------------------------------------------------------------------
 
 		if (player.gun != Weapon.NONE) {
-			player_display_held(&player, &assets, &player_gun_tex, player_prev_gun);
+			player::display_held(&player, &assets, &player_gun_tex, player_prev_gun);
 		}
 		player_prev_gun = player.gun;
 
@@ -697,36 +285,36 @@ fn int main() {
 			acc -= player.dir.angle_to_cart().rotate(math::PI_2); 
 		}
 		else if (raylib::is_key_down(raylib::KEY_D)) {
-			turn_acc += PLAYER_TURN_ACCELERATION;
+			turn_acc += player::PLAYER_TURN_ACCELERATION;
 		}
 
 		if (raylib::is_key_down(raylib::KEY_A) && raylib::is_key_down(raylib::KEY_LEFT_ALT)) {
 			acc -= player.dir.angle_to_cart().rotate(-math::PI_2); 
 		}
 		else if (raylib::is_key_down(raylib::KEY_A)) {
-			turn_acc -= PLAYER_TURN_ACCELERATION;
+			turn_acc -= player::PLAYER_TURN_ACCELERATION;
 		}
 
 		if (raylib::is_key_pressed(raylib::KEY_SPACE)) {
-			player_attack(&world, &entities, &player, false);
+			player::attack(&world, &entities, &player, false);
 		}
 
-		acc = acc.normalize() * PLAYER_ACCELERATION;
+		acc = acc.normalize() * player::PLAYER_ACCELERATION;
 		
 		player.body.vel += acc * raylib::get_frame_time();
 
-		player.pos = process_body_collisions(world.map, entities, player.pos, player.body, null);
-		player.body.vel *= PLAYER_VEL_DAMPING;
+		player.pos = entity::process_body_collisions(world.map, entities, player.pos, player.body, null);
+		player.body.vel *= player::PLAYER_VEL_DAMPING;
 
 		player.dir_vel += turn_acc * raylib::get_frame_time();
 		player.dir -= player.dir_vel;
 		
 		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);
-		player.dir_vel *= PLAYER_TURN_DAMPING;
+		player.dir_vel *= player::PLAYER_TURN_DAMPING;
 
-		update_entities(&entities, &player);
+		entity::update_entities(&entities, &player);
 
-		if (player.body.vel.length_sq() < MINIMUM_MOVEMENT_THRESHOLD) {
+		if (player.body.vel.length_sq() < player::MINIMUM_MOVEMENT_THRESHOLD) {
 			player.body.vel = {0,0};
 			player.moving = false;
 		}
@@ -736,12 +324,12 @@ fn int main() {
 
 		foreach (&ent : entities) {
 			if (ent.type == EntityType.FOLLOWER) {
-				ent.pos = process_body_collisions(world.map, entities, ent.pos, ent.body, ent);
-				ent.body.vel *= PLAYER_VEL_DAMPING;
+				ent.pos = entity::process_body_collisions(world.map, entities, ent.pos, ent.body, ent);
+				ent.body.vel *= player::PLAYER_VEL_DAMPING;
 			}
 		}
 
-		update_world_occupied_cells(&world, entities, &player);
+		world::update_world_occupied_cells(&world, entities, &player);
 		
 	} // GAMELOOP
 
