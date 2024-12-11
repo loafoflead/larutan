@@ -29,10 +29,19 @@ fn ImageList Assets.load_images(Assets this, String[] paths) {
 }
 
 fn void Assets.free(Assets this) {
-	io::printfn("TODO: IMPLEMENT FREEING ASSETS");
+	foreach (asset: this.world_textures) {
+		raylib::unload_image(asset);
+	}
 
-	//for (int i = 0; i < TEXTURE_COUNT; i ++) raylib::unload_image(textures[i]);
+	foreach (asset: this.sprite_textures) {
+		raylib::unload_image(asset);
+	}
 
+	foreach (asset: this.weapon_textures) {
+		raylib::unload_image(asset);
+	}
+
+	raylib::unload_image(this.missing);
 }
 
 fn bool Assets.assert_loaded(Assets this) {

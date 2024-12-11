@@ -7,11 +7,15 @@ import player;
 import world;
 import raylib;
 import libc;
+import timer;
+
+import thinkers;
 
 const usz NUM_COLLISION_NEIGHBOURS = 9;
 const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can collide with outside of 9 neighbours
 
 def EntityList = List(<Entity>);
+def ThinkFunction = fn int(Entity*, Player*);
 
 struct Body {
 	bool simulated;
@@ -22,7 +26,7 @@ struct Body {
 				// to create a hitbox centred on Entity.pos
 }
 
-fn Body new_body(double w, double h) {
+fn Body new_body(double w, double h, bool collides = true, bool simulated = true) {
 	Body body = Body {
 		.simulated = true,
 		.collides = true,
@@ -46,18 +50,66 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 struct Entity {
 	Sprite sprite;
 	Vec2 pos;
-	EntityType type;
 	bool dead;
+	ThinkFunction think;
+
+	EntityType type;
 	union {
-		Body body;
-		Timer timer;
+		// Enemy, Creature, Shop(?)
+		struct {
+			Body body;
+		}
+		// Decal/Decoration
+		struct {
+			Timer timer;
+		}
 	}
 }
 
-union EntityData {
-	struct {
-		
-	}
+fn Entity new_thinker(
+	EntityType 		type, 
+	Vec2 			pos, 
+	Sprite 			sprite, 
+	Body 			body 	 = new_body(1,1), 
+	ThinkFunction 	think_fn = &thinkers::default_think, 
+	bool 			dead	 = false
+) {
+	return Entity {
+		.type = type,
+		.pos = pos,
+		.sprite = sprite,
+		.body = body,
+		.think = think_fn,
+		.dead = dead,
+	};
+}
+
+fn Entity new_dummy(
+	EntityType 		type, 
+	Vec2 			pos, 
+	Sprite 			sprite, 
+	Body 			body 	 = new_body(1,1), 
+	bool 			dead	 = false
+) {
+	return Entity {
+		.type = type,
+		.pos = pos,
+		.sprite = sprite,
+		.body = body,
+		.think = &thinkers::default_think,
+		.dead = dead,
+	};
+}
+
+fn Entity new_decal(Vec2 pos, double z, int sprite_index, float duration_secs) {
+	return Entity {
+		.type = EntityType.DECAL,
+		.pos = pos,
+		.sprite = sprite::new_sprite(sprite_index, z, {1.0, 1.0}),
+		.think = &thinkers::slowly_die,
+		.timer = timer::new_secs(duration_secs),
+		.dead = false,
+	};
 }
 
 fn Sprite* Entity.get_sprite(Entity* this) {
@@ -72,36 +124,51 @@ enum EntityType {
 	DECAL,
 }
 
+fn bool Entity.is_type(Entity* this, EntityType t) {
+	return t == this.type;
+}
 
+fn bool Entity.can_collide(Entity* this) {
+	if (this.type == EntityType.DECAL) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+// TODO: replace this with the 'think' function for entities which have it
 fn void update_entities(EntityList* entities, Player* player) {
 	foreach (&ent : *entities) {
 		if (ent.dead) continue;
-		switch (ent.type) {
+
+		ent.think(ent, player);
+		/* switch (ent.type) {
 			case EntityType.INDESTRUCTIBLE_DECORATION: break;
 			case EntityType.PICKUP:
-				if (ent.body.collides == true || ent.body.simulated) {
-					ent.body.collides = false;
-					ent.body.simulated = false;
-				}
-				ent.sprite.z = math::sin(raylib::get_time() / 20.0) * 100;
-				if (ent.body.centred_box(ent.pos).contains_rect(player.centred_hitbox())) {
-					ent.dead = true;
-					player.gun = PISTOL;
-					io::printfn("TODO: implement picking up items.");
-				}
+				
 			break;
 			case EntityType.FOLLOWER:
-				Vec2 to_player = player.pos - ent.pos;
-				ent.body.vel += to_player * raylib::get_frame_time() * 10;
+				
+			break;
+			case EntityType.DECAL:
+				ent.timer.tick_secs(raylib::get_frame_time());
+				if (ent.timer.finished()) {
+					ent.dead = true; // TODO: possibly put decals in a seperate list
+									 // so they get actually removed
+					ent.timer.reset();
+				}
 			break;
 			default:
 				io::printfn("WARNING: ENTITY TYPE NOT IMPLEMENTED: %d", ent.type);
 				break;
-		}
+		}*/
 	}
 }
 
 fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Body body, Entity* this) {
+	if (this != null && this.dead) return pos;
+
 	Vec2 final_pos = pos;
 	Vec2 vel = body.vel;
 
@@ -136,7 +203,7 @@ fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Bod
 			//sort::quicksort(entities, fn int(Entity* a, Entity* b) => (int)((b.sprite.player_dist - a.sprite.player_dist) * 1000.0));
 			
 			Entity* ent = entities.get_ref(i - NUM_COLLISION_NEIGHBOURS);
-			if (ent != null && ent.body.collides == true && !ent.dead && ent != this) {
+			if (ent != null && ent.can_collide() && ent.body.collides == true && !ent.dead && ent != this) {
 				rects[i] = ent.body.centred_box(ent.pos);
 			}
 		}

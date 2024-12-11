@@ -114,7 +114,9 @@ fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, b
 
 				int map_index = hit.map_pos.y * world::MAP_WIDTH + hit.map_pos.x;
 
-				world.decals.push(decal(Decal.BULLET_HOLE, 5.0));
+				world.entities.push(
+					entity::new_decal(player.pos + ray_dir * hit.dist, z, 9999, 5.0)
+				);
 
 				io::printn("Raycast hits");
 			}

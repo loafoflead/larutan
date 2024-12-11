@@ -15,7 +15,7 @@ import assets;
 import entity;
 import sprite;
 import player;
-
+import thinkers;
 
 
 const Colour RED = {255, 0, 0, 255};
@@ -132,26 +132,23 @@ fn int main() {
 
 	SpriteList sprites_to_render;
 
-	EntityList entities;
-
-	entities.push(
-		Entity {
-			.type = EntityType.INDESTRUCTIBLE_DECORATION,
-			.pos = {2, 3},
-			.sprite = sprite::new_sprite(0, 0, {1.0, 1.0}),
-			.body = entity::new_body(1, 1),
-			.dead = false,
-		}
+	world.entities.push(
+		entity::new_dummy(
+			EntityType.INDESTRUCTIBLE_DECORATION,
+			{2, 3},
+			sprite::new_sprite(0, 0, {1.0, 1.0})
+		)
 	);
 
-	entities.push(
-		Entity {
-			.type = EntityType.PICKUP,
-			.pos = {5, 7},
-			.sprite = sprite::new_sprite(1, 0, {0.5, 1.0}),
-			.body = entity::new_body(1, 1),
-			.dead = false,
-		}
+
+	world.entities.push(
+		entity::new_thinker(
+			EntityType.PICKUP,
+			{5, 7},
+			sprite::new_sprite(1, 0, {0.5, 1.0}),
+			entity::new_body(0.5, 0.5, false),
+			&thinkers::be_pickup,
+		)
 	);
 
 	/*entities.push(
@@ -167,9 +164,13 @@ fn int main() {
 	while (!raylib::window_should_close()) {
 		time ++;
 
-		sprites_to_render.free();
-		foreach (&entity : entities) {
-			if (!entity.dead) sprites_to_render.push(entity.get_sprite());
+		sprites_to_render.clear();
+		foreach (&entity : world.entities) {
+			// TODO: make this line of sight lmao? it's not fucking impossible, you can do 
+			// ANYTHING (maybe not anything)
+			if (!entity.dead) {
+				sprites_to_render.push(entity.get_sprite());
+			}
 		}
 
 		raylib::begin_drawing();
@@ -296,14 +297,14 @@ fn int main() {
 		}
 
 		if (raylib::is_key_pressed(raylib::KEY_SPACE)) {
-			player::attack(&world, &assets, &entities, &player, false);
+			player::attack(&world, &assets, &world.entities, &player, false);
 		}
 
 		acc = acc.normalize() * player::PLAYER_ACCELERATION;
 		
 		player.body.vel += acc * raylib::get_frame_time();
 
-		player.pos = entity::process_body_collisions(world.map, entities, player.pos, player.body, null);
+		player.pos = entity::process_body_collisions(world.map, world.entities, player.pos, player.body, null);
 		player.body.vel *= player::PLAYER_VEL_DAMPING;
 
 		player.dir_vel += turn_acc * raylib::get_frame_time();
@@ -312,7 +313,7 @@ fn int main() {
 		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);
 		player.dir_vel *= player::PLAYER_TURN_DAMPING;
 
-		entity::update_entities(&entities, &player);
+		entity::update_entities(&world.entities, &player);
 
 		if (player.body.vel.length_sq() < player::MINIMUM_MOVEMENT_THRESHOLD) {
 			player.body.vel = {0,0};
@@ -322,14 +323,14 @@ fn int main() {
 			player.moving = true;
 		}
 
-		foreach (&ent : entities) {
-			if (ent.type == EntityType.FOLLOWER) {
-				ent.pos = entity::process_body_collisions(world.map, entities, ent.pos, ent.body, ent);
+		foreach (&ent : world.entities) {
+			if (!ent.dead && ent.type == EntityType.FOLLOWER) {
+				ent.pos = entity::process_body_collisions(world.map, world.entities, ent.pos, ent.body, ent);
 				ent.body.vel *= player::PLAYER_VEL_DAMPING;
 			}
 		}
 
-		world::update_world_occupied_cells(&world, entities, &player);
+		world::update_world_occupied_cells(&world, world.entities, &player);
 		
 	} // GAMELOOP
 

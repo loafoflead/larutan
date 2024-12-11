@@ -16,6 +16,7 @@ const Rect MAP_RECT = Rect { 0, 0, MAP_WIDTH, MAP_HEIGHT };
 
 struct World {
 	MapCell* map;
+	EntityList entities;
 	// list of cells that have a sprite in them, so that when raycasting into 
 	// the world we can check if we hit a sprite when entering 
 	// a cell. (presumably (haven't implemented yet) this is gonna have 
@@ -73,23 +74,23 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
 	world.occupied_cells.clear();
 	// TODO: shit
-	for (int y = 0; y < MAP_HEIGHT; y ++) {
-		for (int x = 0; x < MAP_WIDTH; x++) {
-			Rect rect = {x, y, 1, 1};
+	// FIXME: i unironically have no fucking idea what this routine does, 
+	// but hopefully its now more efficient (i.e. doesn't bring the whole
+	// game to its knees for some reason (possibly the (before the fix) triply
+	// nested for loops run every frame))
+	foreach(&ent: entities) {
+		if (ent.dead) continue;
 
-			foreach(&ent: entities) {
-				if (!MAP_RECT.contains(ent.pos.round())) continue;
+		if (!MAP_RECT.contains(ent.pos.round())) continue;
 
-				if (rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
-					if (!world.occupied_cells.contains((ulong)(y * MAP_WIDTH + x))) {
-						world.occupied_cells.push((ulong)(y * MAP_WIDTH + x));
-					}
-				}
+		Rect rect = {(float)ent.pos.x.round(), (float)ent.pos.y.round(), 1, 1};
+		
+		if (rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
+			if (!world.occupied_cells.contains((ulong)(rect.y * MAP_WIDTH + rect.x))) {
+				world.occupied_cells.push((ulong)(rect.y * MAP_WIDTH + rect.x));
 			}
 		}
 	}
-
-	if (!MAP_RECT.contains(player.pos.round())) return;
 
 	usz[<2>] player_map_pos = (usz[<2>])player.pos.round();
 	world.occupied_cells.push(player_map_pos.y * MAP_WIDTH + player_map_pos.x);
