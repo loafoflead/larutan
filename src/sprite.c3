@@ -22,3 +22,8 @@ fn Sprite new_sprite(usz texture_index, double z, Vec2 uv_scale_division) {
 	};
 	return new;
 }
+
+struct Decal {
+	usz texture_index;
+	double z;
+}

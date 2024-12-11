@@ -5,6 +5,7 @@ import raylib;
 import entity;
 import world;
 import main;
+import rendering;
 
 import std::io;
 
@@ -89,7 +90,7 @@ fn void display_held(Player* player, Assets* assets, Texture* tex, Weapon prev) 
 }
 
 // Fire is alt or main
-fn void attack(World* world, EntityList* ents, Player* player, bool altfired) {
+fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, bool altfired) {
 	// if altfiring a gun w/ no altfire, don't shoot (don't shoot!!)
 	if ((altfired && !player.gun.has_altfire()) || player.gun == Weapon.NONE) return; 
 
@@ -98,7 +99,23 @@ fn void attack(World* world, EntityList* ents, Player* player, bool altfired) {
 	switch(player.gun) {
 
 		case Weapon.PISTOL:
-			if (world.ray_hits(player.pos, player.dir.angle_to_cart(), ents)) {
+			Vec2 ray_dir = player.dir.angle_to_cart(); 
+			RaycastHit hit = world.cast_ray(player.pos, ray_dir, ents);
+			if (hit.hit) {
+				double z = 0.5;
+				double wall_x;
+				if (hit.side == 0) {
+					wall_x = player.pos.y + hit.dist * ray_dir.y;
+				}
+				else {
+					wall_x = player.pos.x + hit.dist * ray_dir.x;
+				}
+				wall_x -= math::floor(wall_x);
+
+				int map_index = hit.map_pos.y * world::MAP_WIDTH + hit.map_pos.x;
+
+				world.decals.push(decal(Decal.BULLET_HOLE, 5.0));
+
 				io::printn("Raycast hits");
 			}
 			else {

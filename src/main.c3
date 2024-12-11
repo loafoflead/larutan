@@ -296,7 +296,7 @@ fn int main() {
 		}
 
 		if (raylib::is_key_pressed(raylib::KEY_SPACE)) {
-			player::attack(&world, &entities, &player, false);
+			player::attack(&world, &assets, &entities, &player, false);
 		}
 
 		acc = acc.normalize() * player::PLAYER_ACCELERATION;

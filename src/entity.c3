@@ -47,8 +47,17 @@ struct Entity {
 	Sprite sprite;
 	Vec2 pos;
 	EntityType type;
-	Body body;
 	bool dead;
+	union {
+		Body body;
+		Timer timer;
+	}
+}
+
+union EntityData {
+	struct {
+		
+	}
 }
 
 fn Sprite* Entity.get_sprite(Entity* this) {
@@ -60,6 +69,7 @@ enum EntityType {
 	INDESTRUCTIBLE_DECORATION,
 	PICKUP,
 	FOLLOWER,
+	DECAL,
 }
 
 

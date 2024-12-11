@@ -25,10 +25,16 @@ struct World {
 }
 
 fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
+	RaycastHit hit = this.cast_ray(og, dir, ents);
+	if (hit.hit) return true;
+	return false;
+}
+
+fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
 
 	// just checking if it hit or not...
-	if (hit.hit) return true;
+	if (hit.hit) return hit;
 
 	// check for entities and stuff now
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
@@ -41,21 +47,27 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	// check if a cell that contains an entity is hit with a raycast
 	hit = rendering::cast_ray(temp_map, og, dir);
 
+	Vec2 hit_pt = og + dir * hit.dist;
+	double added_dist = 0;
 	if (hit.hit) {
 		// FIXME: extremely naive and frankly shit implementation
-		Vec2 hit_pt = og + dir * hit.dist;
 
 		foreach(ent:ents) {
 			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
 				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
-					return true;
+					hit.dist += added_dist;
+					hit.map_pos = (int[<2>])(og + dir * hit.dist);
+					hit.side = -1;
+					return hit;
 				}
-				hit_pt += MAP_AABB_RAYCAST_CHECK_RAY_STEP * dir;
+				added_dist += MAP_AABB_RAYCAST_CHECK_RAY_STEP;
+				hit_pt = (hit.dist + added_dist) * dir;
 			}
 		}
 	}
 
-	return false;
+	hit.hit = false;
+	return hit;
 }
 
 fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
