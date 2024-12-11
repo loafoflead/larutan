@@ -365,7 +365,7 @@ fn void render_sprites(Player* player, SpriteList* sprites, Assets* assets, Colo
 		Image* tex = &assets.sprite_textures[sprite.texture_index];
 		if (tex == null) tex = &assets.missing;
 		if (tex.data == null) tex = &assets.missing;
-		tex = &assets.missing;
+		if (sprite.texture_index >= assets.sprite_textures.len()) tex = &assets.missing;
 
 		for (int stripe = draw_start_x; stripe < draw_end_x; stripe++) {
 			int tex_x = (int) (256 * (stripe - (-sprite_width / 2 + sprite_screen_x)) * tex.width / sprite_width) / 256;
