@@ -110,7 +110,7 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 	};
 }
 
-fn void raycast_walls(Player* player, MapCell* map, Assets* assets, Colour* pixels, double* z_buffer) {
+fn void! raycast_walls(Player* player, MapCell* map, Assets* assets, AssetHandleList* world_textures, Colour* pixels, double* z_buffer) {
 	int num_rays = main::RENDER_WINDOW_WIDTH;
 	Vec2 fov_left = player.dir.angle_to_cart() - player.camera_plane;
 	Vec2 fov_right = player.dir.angle_to_cart() + player.camera_plane;
@@ -152,11 +152,11 @@ fn void raycast_walls(Player* player, MapCell* map, Assets* assets, Colour* pixe
 
 		if (map[map_index] != 0) z_buffer[i] = perp_wall_dist;
 		int texture_index = map[map_index];
-		if (texture_index <= assets.world_textures.len()) {
+		if (texture_index <= world_textures.len()) {
 			texture_index--;
 
-			Image* texture = &assets.world_textures[texture_index];
-			if (texture == null) texture = &assets.missing;
+			Asset* ass = assets.get(&(*world_textures)[texture_index]) ?? assets.get_default(AssetType.PNGIMAGE)!;
+			Image* texture = (Image*)ass.data;
 			double wall_x = 0.0;
 
 			if (side == 0) {
@@ -218,7 +218,7 @@ fn void raycast_walls(Player* player, MapCell* map, Assets* assets, Colour* pixe
 	}
 }
 
-fn void raycast_floors(Player* player, MapCell* map, Assets* assets, Colour* pixels) {
+fn void! raycast_floors(Player* player, MapCell* map, Assets* assets, AssetHandleList* world_textures, Colour* pixels) {
 	Vec2 fov_left = player.dir.angle_to_cart() - player.camera_plane;
 	Vec2 fov_right = player.dir.angle_to_cart() + player.camera_plane;
 	
@@ -255,10 +255,10 @@ fn void raycast_floors(Player* player, MapCell* map, Assets* assets, Colour* pix
 				ceiling_tex_idx = 0;
 			}
 
-			Image* floor_texture = &assets.world_textures[floor_tex_idx];
-			Image* ceiling_texture = &assets.world_textures[ceiling_tex_idx];
-			if (ceiling_texture == null) ceiling_texture = &assets.missing;
-			if (floor_texture == null) floor_texture = &assets.missing;
+			Asset* floor_ass = assets.get(&(*world_textures)[floor_tex_idx])!;
+			Image* floor_texture = (Image*)floor_ass.data;
+			Asset* ceiling_ass = assets.get(&(*world_textures)[ceiling_tex_idx])!;
+			Image* ceiling_texture = (Image*)ceiling_ass.data;
 
 			int[<2>] tex_pos = {
 				(int)(floor_texture.width * (floor_pos.x - cell.x)) & (floor_texture.width - 1),
@@ -309,7 +309,7 @@ fn void raycast_floors(Player* player, MapCell* map, Assets* assets, Colour* pix
 	}
 }
 
-fn void render_sprites(Player* player, SpriteList* sprites, Assets* assets, Colour* pixels, double* z_buffer) {
+fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, AssetHandleList* sprite_textures, Colour* pixels, double* z_buffer) {
 	for (int i = 0; i < sprites.len(); i++) {
 		sprites.get(i).player_dist = player.pos.distance(sprites.get(i).pos);
 	}
@@ -361,11 +361,15 @@ fn void render_sprites(Player* player, SpriteList* sprites, Assets* assets, Colo
 		if (draw_end_x >= main::RENDER_WINDOW_WIDTH) {
 			draw_end_x = main::RENDER_WINDOW_WIDTH - 1;
 		}
-		
-		Image* tex = &assets.sprite_textures[sprite.texture_index];
-		if (tex == null) tex = &assets.missing;
-		if (tex.data == null) tex = &assets.missing;
-		if (sprite.texture_index >= assets.sprite_textures.len()) tex = &assets.missing;
+
+		Asset* ass;
+		if (sprite.texture_index >= sprite_textures.len()) {
+			ass = assets.get_default(AssetType.PNGIMAGE)!;
+		}
+		else {
+			ass = assets.get(sprite_textures.get_ref(sprite.texture_index)) ?? assets.get_default(AssetType.PNGIMAGE)!;
+		}
+		Image* tex = (Image*)ass.data;
 
 		for (int stripe = draw_start_x; stripe < draw_end_x; stripe++) {
 			int tex_x = (int) (256 * (stripe - (-sprite_width / 2 + sprite_screen_x)) * tex.width / sprite_width) / 256;

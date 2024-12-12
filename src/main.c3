@@ -18,6 +18,8 @@ import player;
 import thinkers;
 
 
+const String MISSING_FILEPATH = "assets/missing.png";
+
 const Colour RED = {255, 0, 0, 255};
 const Colour WHITE = {255, 255, 255, 255};
 const Colour BACKGROUND_COL = {0x18, 0x18, 0x18, 0xFF};
@@ -59,7 +61,7 @@ fn Vec2 double.angle_to_cart(double this) {
 usz time = 0;
 
 
-fn int main() {
+fn void! main() {
 	// FIXME: prototype
 	room_gen::generate_rooms();
 
@@ -71,11 +73,32 @@ fn int main() {
 	World world;
 	world.map = (MapCell*)calloc(world::MAP_WIDTH * world::MAP_HEIGHT * MapCell.sizeof);
 
-	Assets assets;
-	assets.missing = raylib::load_image("assets/missing.png");
-	assets.weapon_textures = assets.load_images({"assets/weapons/pistol.png"});
-	assets.world_textures = assets.load_images({"assets/col_test.png","assets/brick_wall.png"});
-	assets.sprite_textures = assets.load_images({"assets/sprites/barrel.png","assets/sprites/boy.png"});
+	Image missing = raylib::load_image(MISSING_FILEPATH);
+	while(!raylib::is_image_ready(missing)) {}
+	Assets assets; assets.new_init();
+	assets.set_type_default(
+		AssetType.PNGIMAGE,
+		Asset { 
+			.desc = AssetDescriptor {
+				.name = "missing", 
+				.filepath = MISSING_FILEPATH, 
+				.type = AssetType.PNGIMAGE
+			},
+			.data = (void*)&missing,
+		}
+	);
+	(void)assets.load_many({
+		{"pistol", "assets/weapons/pistol.png", AssetType.PNGIMAGE},
+	})!;
+	AssetHandleList world_textures = assets.load_many({
+		{"col_test", "assets/col_test.png", AssetType.PNGIMAGE},
+		{"brick_wall", "assets/brick_wall.png", AssetType.PNGIMAGE},
+	})!;
+	AssetHandleList sprite_textures = assets.load_many({
+		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE},
+		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE},
+	})!;
+	sprite_textures.len();
 	/*Image* textures = (Image*)calloc(TEXTURE_COUNT * Image.sizeof);
 	String[TEXTURE_COUNT] image_paths = {
 		"assets/col_test.png",
@@ -104,7 +127,7 @@ fn int main() {
 	//defer free(textures);
 
 	if (assets.assert_loaded() == false) {
-		return -1;
+		return; // TODO: Error handling
 	}
 
 
@@ -161,8 +184,14 @@ fn int main() {
 		}
 	);*/
 
+	bool poll_assets = true;
+
 	while (!raylib::window_should_close()) {
 		time ++;
+
+		if (poll_assets) {
+			poll_assets = assets.poll_ready()!!;
+		}
 
 		sprites_to_render.clear();
 		foreach (&entity : world.entities) {
@@ -183,12 +212,12 @@ fn int main() {
 		// RAYCAST AND BLIT TEXTURE
 		// ---------------------------------------------------------------------
 
-		if (draw_floor_and_ceiling) rendering::raycast_floors(&player, world.map, &assets, pixels);
+		if (draw_floor_and_ceiling) (void)rendering::raycast_floors(&player, world.map, &assets, &world_textures, pixels);
 
 		for (int i = 0; i < RENDER_WINDOW_WIDTH; i ++) z_buffer[i] = math::DOUBLE_MAX;
-		rendering::raycast_walls(&player, world.map, &assets, pixels, z_buffer);
+		(void)rendering::raycast_walls(&player, world.map, &assets, &world_textures, pixels, z_buffer);
 
-		rendering::render_sprites(&player, &sprites_to_render, &assets, pixels, z_buffer);
+		(void)rendering::render_sprites(&player, &sprites_to_render, &assets, &sprite_textures, pixels, z_buffer);
 
 		raylib::update_texture(tex, (char*)pixels);
 
@@ -333,7 +362,4 @@ fn int main() {
 		world::update_world_occupied_cells(&world, world.entities, &player);
 		
 	} // GAMELOOP
-
-
-	return 0;
 }

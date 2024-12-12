@@ -21,8 +21,8 @@ const float PLAYER_SIDE_LENGTH = 0.2f;
 
 enum Weapon : int (String sprite_path)
 {
-	NONE = "assets/missing.png",
-	PISTOL = "assets/weapons/pistol.png",
+	NONE = "missing",
+	PISTOL = "pistol",
 }
 
 fn bool Weapon.has_altfire(Weapon weapon) {
@@ -63,8 +63,7 @@ fn Rect Player.centred_hitbox(Player* this) {
 // FIXME: weird hardcoded values extravaganza!
 fn void display_held(Player* player, Assets* assets, Texture* tex, Weapon prev) {
 	if (player.gun != prev) {
-		Image* img = &assets.weapon_textures[(usz)player.gun - 1];
-		if (img == null) img = &assets.missing;
+		Image* img = (Image*)(assets.get_name(player.gun.sprite_path) ?? assets.get_default(AssetType.PNGIMAGE)!!).data;
 		*tex = raylib::load_texture_from_image(*img);
 	}
 	if (tex == null) return;
