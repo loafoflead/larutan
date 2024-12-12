@@ -31,6 +31,10 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	return false;
 }
 
+// TODO: when hitting an entity, the ray will sometimes be right up in a cell 
+// and therefore inside an entity on the border between two or more cells
+// when hit, so the hit is registered way far off from where it actually 
+// hits the entity's hitbox
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
 
@@ -52,8 +56,8 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	double added_dist = 0;
 	if (hit.hit) {
 		// FIXME: extremely naive and frankly shit implementation
-
 		foreach(ent:ents) {
+			if (ent.dead) continue;
 			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
 				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
 					hit.dist += added_dist;

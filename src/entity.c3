@@ -15,7 +15,7 @@ const usz NUM_COLLISION_NEIGHBOURS = 9;
 const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can collide with outside of 9 neighbours
 
 def EntityList = List(<Entity>);
-def ThinkFunction = fn int(Entity*, Player*);
+def ThinkFunction = fn ThinkResult(Entity*, Player*);
 
 struct Body {
 	bool simulated;
@@ -139,10 +139,24 @@ fn bool Entity.can_collide(Entity* this) {
 
 // TODO: replace this with the 'think' function for entities which have it
 fn void update_entities(EntityList* entities, Player* player) {
-	foreach (&ent : *entities) {
+	bool should_remove_dead_ents = false;
+	foreach (i, &ent : *entities) {
 		if (ent.dead) continue;
 
-		ent.think(ent, player);
+		ThinkResult res = ent.think(ent, player);
+		switch (res) {
+			case ThinkResult.KILLME:
+				should_remove_dead_ents = true;
+			break;
+			case ThinkResult.NOT_ME_ERROR:
+				io::printfn("ERROR: Thinker has incorrect think function for its entity type.");
+			break;
+			case ThinkResult.NONE:
+			break;
+			default:
+				io::printfn("ERROR: Unhandled ThinkResult %d", res);
+			break;
+		}
 		/* switch (ent.type) {
 			case EntityType.INDESTRUCTIBLE_DECORATION: break;
 			case EntityType.PICKUP:
@@ -163,6 +177,11 @@ fn void update_entities(EntityList* entities, Player* player) {
 				io::printfn("WARNING: ENTITY TYPE NOT IMPLEMENTED: %d", ent.type);
 				break;
 		}*/
+	}
+	
+	if (should_remove_dead_ents) {
+		io::printn("INFO: removing dead guys");
+		entities.retain_using_test(fn bool(Entity* ent, any _ctx) => !ent.dead, null);
 	}
 }
 

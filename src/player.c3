@@ -43,6 +43,7 @@ struct Player {
 	float dir;
 	float dir_vel;
 	// inv
+	usz weapons_unlocked;
 	Weapon gun;
 	// flags
 	bool moving;
