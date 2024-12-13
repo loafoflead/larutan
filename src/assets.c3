@@ -22,7 +22,7 @@ fault AssetError {
 struct Assets {
 	AssetList assets;
 	AssetNameMap assets_named;
-	DefaultAssetsMap defaults;
+	DefaultAssetsMap default_names;
 }
 
 struct Asset {
@@ -60,13 +60,13 @@ enum AssetType: usz {
 }
 
 fn uint AssetType.hash(AssetType* self) @dynamic {
-	return ((usz)self).hash();
+	return ((iptr)*self).hash();
 }
 
 fn void Assets.new_init(Assets* self) {
 	self.assets.new_init();
 	self.assets_named.new_init();
-	self.defaults.new_init();
+	self.default_names.new_init();
 }
 
 fn void Assets.free(Assets* self) {
@@ -78,10 +78,11 @@ fn bool Assets.assert_loaded(Assets* self) {
 	return true;
 }
 
-fn void Assets.set_type_default(Assets* self, AssetType type, Asset a) {
+fn void Assets.set_type_default(&self, AssetType type, Asset a) {
 	usz idx = self.assets.len();
 	self.assets.push(a);
-	self.defaults[type] = idx;
+	self.default_names.set(type, idx);
+	io::printfn("%d -> %d", type, self.default_names.get(type)!!);
 }
 
 fn AssetHandleList! Assets.load_many(Assets* self, AssetDescriptor[] descs) {
@@ -174,7 +175,10 @@ fn Asset*! Assets.get_name(Assets* self, String name) {
 }
 
 fn Asset*! Assets.get_default(Assets* self, AssetType type) {
-	Asset* ass = self.assets.get_ref(self.defaults[type])!;
+	if (!self.default_names.has_key(type)) {
+		return AssetError.NOT_FOUND?;
+	}
+	Asset* ass = self.assets.get_ref(self.default_names[type]!);
 	if (!ass.ready) return AssetError.LOADING?;
-	return AssetError.NOT_FOUND?;
+	return ass;
 }

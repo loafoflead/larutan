@@ -75,18 +75,24 @@ fn void! main() {
 
 	Image missing = raylib::load_image(MISSING_FILEPATH);
 	while(!raylib::is_image_ready(missing)) {}
-	Assets assets; assets.new_init();
+	Assets assets; 
+	assets.new_init();
+
 	assets.set_type_default(
 		AssetType.PNGIMAGE,
-		Asset { 
+		Asset {
 			.desc = AssetDescriptor {
-				.name = "missing", 
-				.filepath = MISSING_FILEPATH, 
+				.name = "missing",
+				.filepath = MISSING_FILEPATH,
 				.type = AssetType.PNGIMAGE
 			},
 			.data = (void*)&missing,
+			.ready = false,
 		}
 	);
+
+	io::printfn("%d", assets.default_names.get(AssetType.PNGIMAGE)!!);
+
 	(void)assets.load_many({
 		{"pistol", "assets/weapons/pistol.png", AssetType.PNGIMAGE},
 	})!;
