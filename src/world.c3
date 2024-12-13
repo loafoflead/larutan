@@ -5,7 +5,7 @@ import entity;
 import player;
 import rendering;
 
-const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.05;
+const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.1;
 
 def MapCell = short;
 def IndexList = List(<usz>);
@@ -35,6 +35,8 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 // and therefore inside an entity on the border between two or more cells
 // when hit, so the hit is registered way far off from where it actually 
 // hits the entity's hitbox
+// TODO; small hitboxes seem to never or possibly only extremely rarely
+// be detected by raycasts. VALVE PLS FIX!
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
 

@@ -1,5 +1,6 @@
 import std::math;
 import main;
+import math;
 import world;
 import player;
 import assets;
@@ -309,15 +310,15 @@ fn void! raycast_floors(Player* player, MapCell* map, Assets* assets, AssetHandl
 	}
 }
 
-fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, AssetHandleList* sprite_textures, Colour* pixels, double* z_buffer) {
-	for (int i = 0; i < sprites.len(); i++) {
-		sprites.get(i).player_dist = player.pos.distance(sprites.get(i).pos);
+fn void! render_sprites(Player* player, ModelList* models, Assets* assets, AssetHandleList* sprite_textures, Colour* pixels, double* z_buffer) {
+	for (int i = 0; i < models.len(); i++) {
+		models.get(i).player_dist = player.pos.distance(models.get(i).pos);
 	}
 
-	sort::quicksort(*sprites, fn int(Sprite* a, Sprite* b) => (int)((b.player_dist - a.player_dist) * 1000.0));
+	sort::quicksort(*models, fn int(EntityModel* a, EntityModel* b) => (int)((b.player_dist - a.player_dist) * 1000.0));
 
-	foreach (sprite : sprites) {
-		Vec2 rel_pos = sprite.pos - player.pos;
+	foreach (model : models) {
+		Vec2 rel_pos = model.pos - player.pos;
 	
 		// did this in maths expertes, inverse of a matrix to find A or whatever
 		Vec2 player_dir = player.dir.angle_to_cart();
@@ -327,14 +328,14 @@ fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, Ass
 		transform.x = inverse_determinant * (player_dir.y * rel_pos.x - player_dir.x * rel_pos.y);
 		transform.y = inverse_determinant * (-player.camera_plane.y * rel_pos.x + player.camera_plane.x * rel_pos.y);
 
-		int z_move = (int) (sprite.z / transform.y);
+		int z_move = (int) (model.z / transform.y);
 
 		if (transform.y == 0) continue;
 		int sprite_screen_x = (int)( (main::RENDER_WINDOW_WIDTH / 2) * ( 1 + transform.x / transform.y ) );
 
 		int sprite_height = math::abs((int)((double)main::RENDER_WINDOW_HEIGHT / transform.y));
-		if (sprite.uv_scale_division.y != 0) {
-			sprite_height = (int)( (double)sprite_height / sprite.uv_scale_division.y);
+		if (model.uv_scale_division.y != 0) {
+			sprite_height = (int)( (double)sprite_height / model.uv_scale_division.y);
 		}
 
 		int draw_start_y = -sprite_height / 2 + main::RENDER_WINDOW_HEIGHT / 2 + z_move;
@@ -348,8 +349,8 @@ fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, Ass
 		}
 		
 		int sprite_width = math::abs( (int)(main::RENDER_WINDOW_HEIGHT / transform.y) );
-		if (sprite.uv_scale_division.x != 0) {
-			sprite_width = (int)( (double)sprite_width / sprite.uv_scale_division.x);
+		if (model.uv_scale_division.x != 0) {
+			sprite_width = (int)( (double)sprite_width / model.uv_scale_division.x);
 		}
 
 		int draw_start_x = -sprite_width / 2 + sprite_screen_x;
@@ -363,13 +364,18 @@ fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, Ass
 		}
 
 		Asset* ass;
-		if (sprite.texture_index >= sprite_textures.len()) {
+		if (model.texture_index >= sprite_textures.len()) {
 			ass = assets.get_default(AssetType.PNGIMAGE)!;
 		}
 		else {
-			ass = assets.get(sprite_textures.get_ref(sprite.texture_index)) ?? assets.get_default(AssetType.PNGIMAGE)!;
+			ass = assets.get(sprite_textures.get_ref(model.texture_index)) ?? assets.get_default(AssetType.PNGIMAGE)!;
 		}
-		Image* tex = (Image*)ass.data;
+		Image* full = (Image*)ass.data;
+		usz[<4>] portion = model.image_portion()!;
+		if (portion == {0,0,0,0}) {
+			portion = {0, 0, full.width, full.height};
+		}
+		Image tex = raylib::image_from_image(*full, math::rect_from_usz(portion));
 
 		for (int stripe = draw_start_x; stripe < draw_end_x; stripe++) {
 			int tex_x = (int) (256 * (stripe - (-sprite_width / 2 + sprite_screen_x)) * tex.width / sprite_width) / 256;
@@ -383,7 +389,7 @@ fn void! render_sprites(Player* player, SpriteList* sprites, Assets* assets, Ass
 					Colour col = tex.data[tex_y * tex.width + tex_x];
 					if (FADEOUT) {
 						float[<4>] col_lerp = (float[<4>])col / 255.0;
-						col_lerp = col_lerp.lerp(float[<4>] {1.0, 1.0, 1.0, 1.0}, (float)(sprite.player_dist / FADEOUT_DIST));
+						col_lerp = col_lerp.lerp(float[<4>] {1.0, 1.0, 1.0, 1.0}, (float)(model.player_dist / FADEOUT_DIST));
 						col_lerp *= 255.0;
 						if (col.a != 0) pixels[y * main::RENDER_WINDOW_WIDTH + stripe] = (Colour)col_lerp;						
 					}

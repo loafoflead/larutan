@@ -75,6 +75,8 @@ extern fn void unload_texture(Texture texture) @extern("UnloadTexture");
 
 extern fn void draw_texture_with_params(Texture texture, NPatchInfo nPatchInfo, Rect dest, Vec2 origin, float rotation, Colour tint) @extern("DrawTextureNPatch"); // Draws a texture (or part of it) that stretches or shrinks nicely
 
+extern fn Image image_from_image(Image image, Rect rec) @extern("ImageFromImage");                                                  // Create an image from another image piece
+
 extern fn bool is_image_ready(Image image) @extern("IsImageReady");                                                                    // Check if an image is ready
 
 extern fn void unload_image(Image image) @extern("UnloadImage");

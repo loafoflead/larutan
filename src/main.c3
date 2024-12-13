@@ -9,6 +9,7 @@ import std::collections::list;
 import raylib;
 import rendering;
 import math;
+import timer;
 import room_gen;
 import world;
 import assets;
@@ -103,6 +104,7 @@ fn void! main() {
 	AssetHandleList sprite_textures = assets.load_many({
 		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE},
 		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE},
+		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE},
 	})!;
 	sprite_textures.len();
 	/*Image* textures = (Image*)calloc(TEXTURE_COUNT * Image.sizeof);
@@ -159,7 +161,7 @@ fn void! main() {
 	Weapon player_prev_gun = Weapon.NONE;
 	Texture player_gun_tex;
 
-	SpriteList sprites_to_render;
+	ModelList to_render;
 
 	world.entities.push(
 		entity::new_dummy(
@@ -169,14 +171,24 @@ fn void! main() {
 		)
 	);
 
+	world.entities.push(
+		entity::new_thinker(
+			EntityType.INDESTRUCTIBLE_DECORATION,
+			{4,10},
+			sprite::new_spritesheet(2, 32*3, 32, {32, 32})!,
+			think_fn: &Entity.be_animated,
+			body: entity::new_body(0.25, 0.25),
+			timer: timer::new_secs(0.25),
+		)
+	);
 
 	world.entities.push(
 		entity::new_thinker(
 			EntityType.PICKUP,
 			{5, 7},
 			sprite::new_sprite(1, 0, {0.5, 1.0}),
-			entity::new_body(0.5, 0.5, false),
 			&thinkers::be_pickup,
+			entity::new_body(0.5, 0.5, false),
 		)
 	);
 
@@ -199,12 +211,12 @@ fn void! main() {
 			poll_assets = assets.poll_ready()!!;
 		}
 
-		sprites_to_render.clear();
+		to_render.clear();
 		foreach (&entity : world.entities) {
 			// TODO: make this line of sight lmao? it's not fucking impossible, you can do 
 			// ANYTHING (maybe not anything)
 			if (!entity.dead) {
-				sprites_to_render.push(entity.get_sprite());
+				to_render.push(entity.get_model());
 			}
 		}
 
@@ -223,7 +235,7 @@ fn void! main() {
 		for (int i = 0; i < RENDER_WINDOW_WIDTH; i ++) z_buffer[i] = math::DOUBLE_MAX;
 		(void)rendering::raycast_walls(&player, world.map, &assets, &world_textures, pixels, z_buffer);
 
-		(void)rendering::render_sprites(&player, &sprites_to_render, &assets, &sprite_textures, pixels, z_buffer);
+		(void)rendering::render_sprites(&player, &to_render, &assets, &sprite_textures, pixels, z_buffer);
 
 		raylib::update_texture(tex, (char*)pixels);
 

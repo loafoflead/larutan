@@ -48,37 +48,31 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 }
 
 struct Entity {
-	Sprite sprite;
+	EntityModel model;
 	Vec2 pos;
 	bool dead;
 	ThinkFunction think;
 
 	EntityType type;
-	union {
-		// Enemy, Creature, Shop(?)
-		struct {
-			Body body;
-		}
-		// Decal/Decoration
-		struct {
-			Timer timer;
-		}
-	}
+	Body body;
+	Timer timer;
 }
 
 fn Entity new_thinker(
 	EntityType 		type, 
 	Vec2 			pos, 
-	Sprite 			sprite, 
-	Body 			body 	 = new_body(1,1), 
+	EntityModel 			model, 
 	ThinkFunction 	think_fn = &thinkers::default_think, 
+	Body 			body 	 = new_body(1,1), 
+	Timer 			timer 	 = timer::new_secs(1.0),
 	bool 			dead	 = false
 ) {
 	return Entity {
 		.type = type,
 		.pos = pos,
-		.sprite = sprite,
+		.model = model,
 		.body = body,
+		.timer = timer,
 		.think = think_fn,
 		.dead = dead,
 	};
@@ -87,34 +81,36 @@ fn Entity new_thinker(
 fn Entity new_dummy(
 	EntityType 		type, 
 	Vec2 			pos, 
-	Sprite 			sprite, 
+	EntityModel 			model, 
 	Body 			body 	 = new_body(1,1), 
+	Timer 			timer 	 = timer::new_secs(1.0),
 	bool 			dead	 = false
 ) {
 	return Entity {
 		.type = type,
 		.pos = pos,
-		.sprite = sprite,
+		.model = model,
 		.body = body,
+		.timer = timer,
 		.think = &thinkers::default_think,
 		.dead = dead,
 	};
 }
 
-fn Entity new_decal(Vec2 pos, double z, int sprite_index, float duration_secs) {
+fn Entity new_decal(Vec2 pos, double z, int texture_index, float duration_secs) {
 	return Entity {
 		.type = EntityType.DECAL,
 		.pos = pos,
-		.sprite = sprite::new_sprite(sprite_index, z, {1.0, 1.0}),
+		.model = sprite::new_sprite(texture_index, z, {1.0, 1.0}),
 		.think = &thinkers::slowly_die,
 		.timer = timer::new_secs(duration_secs),
 		.dead = false,
 	};
 }
 
-fn Sprite* Entity.get_sprite(Entity* this) {
-	this.sprite.pos = this.pos;
-	return &this.sprite;
+fn EntityModel* Entity.get_model(Entity* this) {
+	this.model.pos = this.pos;
+	return &this.model;
 }
 
 enum EntityType {
@@ -129,11 +125,12 @@ fn bool Entity.is_type(Entity* this, EntityType t) {
 }
 
 fn bool Entity.can_collide(Entity* this) {
-	if (this.type == EntityType.DECAL) {
-		return false;
-	}
-	else {
-		return true;
+	switch (this.type) {
+		case EntityType.DECAL:
+		case EntityType.PICKUP:
+			return false;
+		default:
+			return true;
 	}
 }
 
@@ -151,7 +148,7 @@ fn void update_entities(EntityList* entities, Player* player) {
 			case ThinkResult.NOT_ME_ERROR:
 				io::printfn("ERROR: Thinker has incorrect think function for its entity type.");
 			break;
-			case ThinkResult.NONE:
+			case ThinkResult.OK:
 			break;
 			default:
 				io::printfn("ERROR: Unhandled ThinkResult %d", res);

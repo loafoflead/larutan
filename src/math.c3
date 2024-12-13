@@ -17,6 +17,16 @@ macro bool Rect.equals(Rect *this, Rect that) {
 	return this.x == that.x && this.y == that.y && this.w == that.x && this.h == that.h;
 }
 
+fn Rect rect_from_usz(usz[<4>] rect) {
+	Rect r = {
+		(float)rect.r,
+		(float)rect.g,
+		(float)rect.b,
+		(float)rect.a,
+	};
+	return r;
+}
+
 fn bool Rect.contains(Rect this, Vec2 point) {
 	return 
 		(float)point.x >= this.x 				&& 

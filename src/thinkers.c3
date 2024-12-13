@@ -1,12 +1,14 @@
 import player;
 import entity;
 import raylib;
+import sprite;
 import std::math;
 
 enum ThinkResult {
-	NONE,
+	OK,
 	KILLME,
 	NOT_ME_ERROR,
+	FINISHED,
 }
 
 // DEBUG //
@@ -14,19 +16,43 @@ import std::io;
 
 fn ThinkResult default_think(Entity* self, Player* player) {
 	// Do nothing
-	return ThinkResult.NONE;
+	return ThinkResult.OK;
+}
+
+fn ThinkResult Entity.be_ticking_timer(Entity* self) {
+	self.timer.tick_secs(raylib::get_frame_time());
+	if (self.timer.finished()) {
+		return ThinkResult.FINISHED;
+	}
+	else {
+		return ThinkResult.OK;
+	}
+}
+
+fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
+	if (self.model.type != ModelType.SPRITE_SHEET) return ThinkResult.NOT_ME_ERROR;
+
+	ThinkResult res = self.be_ticking_timer();
+
+	if (res == ThinkResult.FINISHED) {
+		self.model.sprite_sheet.increment();
+		self.timer.reset();
+	}
+
+	return ThinkResult.OK;
 }
 
 fn ThinkResult slowly_die(Entity* self, Player* _p) {
 	if (!self.is_type(EntityType.DECAL)) return ThinkResult.NOT_ME_ERROR;
 
-	self.timer.tick_secs(raylib::get_frame_time()); 
+	self.be_ticking_timer();
+
 	if (self.timer.finished()) {
 		self.dead = true;
 		return ThinkResult.KILLME;
 		// TODO: sort out what the return value means (i.e. whether to remove this ent from the list?)
 	}
-	return ThinkResult.NONE;
+	return ThinkResult.OK;
 }
 
 fn ThinkResult be_pickup(Entity* self, Player* player) {
@@ -37,14 +63,14 @@ fn ThinkResult be_pickup(Entity* self, Player* player) {
 		self.body.simulated = false;
 	}
 
-	self.sprite.z = math::sin(raylib::get_time() / 20.0) * 100;
+	self.model.z = math::sin(raylib::get_time() / 20.0) * 100;
 	if (self.body.centred_box(self.pos).contains_rect(player.centred_hitbox())) {
 		self.dead = true;
 		player.gun = PISTOL;
 		io::printfn("TODO: implement picking up items.");
 		return ThinkResult.KILLME;
 	}
-	return ThinkResult.NONE;
+	return ThinkResult.OK;
 }
 
 fn ThinkResult be_follower(Entity* self, Player* player) {
@@ -52,5 +78,5 @@ fn ThinkResult be_follower(Entity* self, Player* player) {
 
 	Vec2 to_player = player.pos - self.pos;
 	self.body.vel += to_player * raylib::get_frame_time() * 10;
-	return ThinkResult.NONE;
+	return ThinkResult.OK;
 }
