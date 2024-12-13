@@ -47,7 +47,7 @@ const uint PIXEL_HEIGHT = 1;
 // DEBUG
 
 bool draw_minimap = false;
-bool draw_floor_and_ceiling = true;
+bool draw_floor_and_ceiling = false;
 
 //------
 

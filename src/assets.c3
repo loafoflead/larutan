@@ -150,7 +150,7 @@ fn AssetHandle! Assets.load(Assets* self, String filepath, AssetType type, Strin
 	}
 }
 
-fn Asset*! Assets.get(Assets* self, AssetHandle* handle) {
+fn Asset*! Assets.get(Assets* self, AssetHandle* handle) {	
 	if (handle == null) {
 		return AssetError.BAD_HANDLE?;
 	}
