@@ -36,12 +36,10 @@ fn bool Weapon.has_altfire(Weapon weapon) {
 
 
 struct Player {
+	inline Body body;
+	
 	Vec2 pos;
-	Body body;
 	Vec2 camera_plane;
-	// in radians
-	float dir;
-	float dir_vel;
 	// inv
 	usz weapons_unlocked;
 	Weapon gun;

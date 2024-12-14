@@ -1,5 +1,6 @@
 import std::math::vector;
 import std::collections::list;
+import std::math;
 
 def ModelList = List(<EntityModel*>);
 
@@ -20,6 +21,7 @@ struct EntityModel {
 		union {
 			Sprite sprite;
 			struct {
+				bool is_relative_to_player;
 				SpriteSheet sprite_sheet;
 			}
 		}
@@ -28,6 +30,7 @@ struct EntityModel {
 	Vec2 uv_scale_division;
 	double z;
 	Vec2 pos;
+	double dir;
 	double player_dist;
 }
 
@@ -70,6 +73,11 @@ fn void SpriteSheet.increment(&self) {
 	self.current_index %= self.cols*self.rows;
 }
 
+fn void SpriteSheet.set_index(&self, usz i) {
+	self.current_index = i;
+	self.current_index %= self.cols*self.rows;
+}
+
 struct Sprite {
 	usz[<4>] portion;
 }
@@ -77,7 +85,7 @@ struct Sprite {
 
 // sprite dimensions is the size of a single sprite in the sheet
 // TODO: support sprites of different sizes with a vec
-fn EntityModel! new_spritesheet(usz texture_index, usz w, usz h, usz[<2>] sprite_dimensions, double z = 0.0, Vec2 uv_scale_division = {1.0, 1.0}) {
+fn EntityModel! new_spritesheet(usz texture_index, usz w, usz h, usz[<2>] sprite_dimensions, bool is_relative = false, double z = 0.0, Vec2 uv_scale_division = {1.0, 1.0}) {
 	if (w % sprite_dimensions.x != 0) {
 		return SpriteSheetError.WIDTH_MISMATCH?;
 	}
@@ -96,12 +104,32 @@ fn EntityModel! new_spritesheet(usz texture_index, usz w, usz h, usz[<2>] sprite
 		.texture_index = texture_index,
 		.type = ModelType.SPRITE_SHEET,
 		.sprite_sheet = sprite_sheet,
+		.is_relative_to_player = is_relative,
 		.z = z,
 		.uv_scale_division = uv_scale_division,
 		.pos = {0, 0},
+		.dir = 0.0,
 		.player_dist = 0.0,
 	};
 	return new;
+}
+
+fn void EntityModel.set_spritesheet_portion(&self, Vec2 player_pos) {
+	switch (self.type) {
+		case ModelType.SPRITE_SHEET:
+			if (!self.is_relative_to_player) {
+				return;
+			}
+			Vec2 me_to_player = player_pos - self.pos;
+			double ang = math::atan2(me_to_player.x, me_to_player.y) + self.dir; 
+
+			usz n = self.sprite_sheet.rows * self.sprite_sheet.cols;
+			usz idx = (usz)((ang / (2.0 * math::PI)) * (double)n);
+
+			self.sprite_sheet.set_index(idx);
+		case ModelType.SPRITE:
+			return;
+	}
 }
 
 fn usz[<4>]! EntityModel.image_portion(&self) {
@@ -127,6 +155,7 @@ fn EntityModel new_sprite(usz texture_index, double z = 0.0, Vec2 uv_scale_divis
 		.z = z,
 		.uv_scale_division = uv_scale_division,
 		.pos = {0, 0},
+		.dir = 0.0,
 		.player_dist = 0.0,
 	};
 	return new;

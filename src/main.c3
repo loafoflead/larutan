@@ -31,8 +31,8 @@ const double PITCH_ANGLE = 0.66;
 
 const int WIDTH_FACTOR = 4;
 const int HEIGHT_FACTOR = 3;
-const int WINDOW_SCALING_FACTOR = 100;
-const float RENDER_SCREEN_PERCENT = 0.6;
+const int WINDOW_SCALING_FACTOR = 300;
+const float RENDER_SCREEN_PERCENT = 0.2;
 
 const uint RENDER_WINDOW_WIDTH = (uint)((float)(WIDTH_FACTOR * WINDOW_SCALING_FACTOR) * RENDER_SCREEN_PERCENT);
 const uint RENDER_WINDOW_HEIGHT = (uint)((float)(HEIGHT_FACTOR * WINDOW_SCALING_FACTOR) * RENDER_SCREEN_PERCENT);
@@ -47,7 +47,7 @@ const uint PIXEL_HEIGHT = 1;
 // DEBUG
 
 bool draw_minimap = false;
-bool draw_floor_and_ceiling = false;
+bool draw_floor_and_ceiling = true;
 
 //------
 
@@ -105,6 +105,7 @@ fn void! main() {
 		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE},
 		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE},
 		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE},
+		{"guy", "assets/sprites/8boy.png", AssetType.PNGIMAGE},
 	})!;
 	sprite_textures.len();
 	/*Image* textures = (Image*)calloc(TEXTURE_COUNT * Image.sizeof);
@@ -151,10 +152,11 @@ fn void! main() {
 	world.map[5 * world::MAP_WIDTH + 1] = 1;
 	Player player = Player {
 		.pos = {3.0, 6.0f},
-		.body = entity::new_body(player::PLAYER_SIDE_LENGTH, player::PLAYER_SIDE_LENGTH),
+		.body = entity::new_body(
+			player::PLAYER_SIDE_LENGTH, player::PLAYER_SIDE_LENGTH,
+			dir: math::PI,
+		),
 		.camera_plane = {0.0, 0.66},
-		.dir = math::PI,
-		.dir_vel = 0.0,
 		.gun = NONE,
 		.moving = false,
 	};
@@ -175,8 +177,9 @@ fn void! main() {
 		entity::new_thinker(
 			EntityType.INDESTRUCTIBLE_DECORATION,
 			{4,10},
-			sprite::new_spritesheet(2, 32*3, 32, {32, 32})!,
-			think_fn: &Entity.be_animated,
+			//sprite::new_spritesheet(2, 32*3, 32, {32, 32}, is_relative: true)!,
+			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
+			//think_fn: &Entity.be_animated,
 			body: entity::new_body(0.25, 0.25),
 			timer: timer::new_secs(0.25),
 		)
@@ -354,7 +357,7 @@ fn void! main() {
 		player.pos = entity::process_body_collisions(world.map, world.entities, player.pos, player.body, null);
 		player.body.vel *= player::PLAYER_VEL_DAMPING;
 
-		player.dir_vel += turn_acc * raylib::get_frame_time();
+		player.dir_vel += turn_acc * (double)raylib::get_frame_time();
 		player.dir -= player.dir_vel;
 		
 		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);

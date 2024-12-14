@@ -20,18 +20,24 @@ def ThinkFunction = fn ThinkResult(Entity*, Player*);
 struct Body {
 	bool simulated;
 	bool collides;
+	// in radians
+	double dir;
+	double dir_vel;
+
 	Vec2 vel;
 	Vec2 acc;
 	Vec2 scale; // every hitbox is a rectangle or a box, so we just need width and height
 				// to create a hitbox centred on Entity.pos
 }
 
-fn Body new_body(double w, double h, bool collides = true, bool simulated = true) {
+fn Body new_body(double w, double h, bool collides = true, bool simulated = true, float dir = 0.0, float dir_vel = 0.0) {
 	Body body = Body {
 		.simulated = true,
 		.collides = true,
 		.vel = {0.0, 0.0},
 		.acc = {0.0, 0.0},
+		.dir = dir,
+		.dir_vel = dir_vel,
 		.scale = {w, h},
 	};
 	return body;
@@ -48,13 +54,13 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 }
 
 struct Entity {
+	inline Body body;
 	EntityModel model;
 	Vec2 pos;
 	bool dead;
 	ThinkFunction think;
 
 	EntityType type;
-	Body body;
 	Timer timer;
 }
 
@@ -110,6 +116,7 @@ fn Entity new_decal(Vec2 pos, double z, int texture_index, float duration_secs) 
 
 fn EntityModel* Entity.get_model(Entity* this) {
 	this.model.pos = this.pos;
+	this.model.dir = this.body.dir;
 	return &this.model;
 }
 

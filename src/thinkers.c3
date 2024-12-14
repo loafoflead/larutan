@@ -32,14 +32,18 @@ fn ThinkResult Entity.be_ticking_timer(Entity* self) {
 fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
 	if (self.model.type != ModelType.SPRITE_SHEET) return ThinkResult.NOT_ME_ERROR;
 
+	self.body.dir += 0.1;
+
+/*
 	ThinkResult res = self.be_ticking_timer();
 
 	if (res == ThinkResult.FINISHED) {
 		self.model.sprite_sheet.increment();
 		self.timer.reset();
 	}
-
+*/
 	return ThinkResult.OK;
+
 }
 
 fn ThinkResult slowly_die(Entity* self, Player* _p) {

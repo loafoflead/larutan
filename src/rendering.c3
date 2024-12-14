@@ -363,6 +363,7 @@ fn void! render_sprites(Player* player, ModelList* models, Assets* assets, Asset
 			draw_end_x = main::RENDER_WINDOW_WIDTH - 1;
 		}
 
+		model.set_spritesheet_portion(player.pos);
 		Asset* ass;
 		if (model.texture_index >= sprite_textures.len()) {
 			ass = assets.get_default(AssetType.PNGIMAGE)!;
