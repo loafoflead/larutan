@@ -179,9 +179,9 @@ fn void! main() {
 			{4,10},
 			//sprite::new_spritesheet(2, 32*3, 32, {32, 32}, is_relative: true)!,
 			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
-			//think_fn: &Entity.be_animated,
+			think_fn: &Entity.be_spinner,
 			body: entity::new_body(0.25, 0.25),
-			timer: timer::new_secs(0.25),
+			timer: timer::new_secs(1.25),
 		)
 	);
 
@@ -359,6 +359,7 @@ fn void! main() {
 
 		player.dir_vel += turn_acc * (double)raylib::get_frame_time();
 		player.dir -= player.dir_vel;
+		player.dir = player.dir.rem(2.0*math::PI);
 		
 		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);
 		player.dir_vel *= player::PLAYER_TURN_DAMPING;
@@ -374,13 +375,20 @@ fn void! main() {
 		}
 
 		foreach (&ent : world.entities) {
-			if (!ent.dead && ent.type == EntityType.FOLLOWER) {
+			if (!ent.dead && ent.can_collide()) {
 				ent.pos = entity::process_body_collisions(world.map, world.entities, ent.pos, ent.body, ent);
 				ent.body.vel *= player::PLAYER_VEL_DAMPING;
+				ent.body.dir -= ent.body.dir_vel * raylib::get_frame_time();
+				ent.body.dir_vel *= 0.99;
+				ent.body.dir = ent.body.dir.rem(2.0*math::PI);
 			}
 		}
 
 		world::update_world_occupied_cells(&world, world.entities, &player);
 		
 	} // GAMELOOP
+}
+
+fn double double.rem(self, double b) {
+	return self - (b * (int)(self/b));
 }

@@ -5,7 +5,10 @@ import entity;
 import player;
 import rendering;
 
+import std::io;
+
 const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.1;
+const double MAX_NEARBY_DIST = 1.0;
 
 def MapCell = short;
 def IndexList = List(<usz>);
@@ -57,10 +60,19 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	Vec2 hit_pt = og + dir * hit.dist;
 	double added_dist = 0;
 	if (hit.hit) {
+		io::printfn("NEAR A GUY");
 		// FIXME: extremely naive and frankly shit implementation
 		foreach(ent:ents) {
 			if (ent.dead) continue;
+			if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
+
+			if (ent.body.centred_box(ent.pos).cohen_suher_line_clips(og, hit_pt)) {
+				// TODO: find the actual position with some subtractions or whatever
+				return hit;
+			}
+			/*
 			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
+				// FIXME: why doesn't this work?
 				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
 					hit.dist += added_dist;
 					hit.map_pos = (int[<2>])(og + dir * hit.dist);
@@ -70,6 +82,7 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 				added_dist += MAP_AABB_RAYCAST_CHECK_RAY_STEP;
 				hit_pt = (hit.dist + added_dist) * dir;
 			}
+			*/
 		}
 	}
 
@@ -91,7 +104,7 @@ fn void update_world_occupied_cells(World* world, EntityList entities, Player* p
 
 		Rect rect = {(float)ent.pos.x.round(), (float)ent.pos.y.round(), 1, 1};
 		
-		if (rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
+		if (!rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
 			if (!world.occupied_cells.contains((ulong)(rect.y * MAP_WIDTH + rect.x))) {
 				world.occupied_cells.push((ulong)(rect.y * MAP_WIDTH + rect.x));
 			}

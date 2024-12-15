@@ -101,17 +101,7 @@ fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, b
 			RaycastHit hit = world.cast_ray(player.pos, ray_dir, ents);
 			if (hit.hit) {
 				double z = 0.5;
-				double wall_x;
-				if (hit.side == 0) {
-					wall_x = player.pos.y + hit.dist * ray_dir.y;
-				}
-				else {
-					wall_x = player.pos.x + hit.dist * ray_dir.x;
-				}
-				wall_x -= math::floor(wall_x);
-
-				int map_index = hit.map_pos.y * world::MAP_WIDTH + hit.map_pos.x;
-
+				
 				world.entities.push(
 					entity::new_decal(player.pos + ray_dir * hit.dist, z, 9999, 5.0)
 				);

@@ -73,3 +73,74 @@ fn Vec2 Rect.corner(Rect this, RectCorner corner) {
 			return {(double)(this.x + this.w), this.y};
 	}
 }
+
+// Code from: en.m.wikipedia.oog/wiki/Cohen%E2%80%92Sutherland_alogrithm
+distinct Outcode = int;
+const int INSIDE 	= 0b0000;
+const int LEFT 		= 0b0001;
+const int RIGHT 	= 0b0010;
+const int BOTTOM 	= 0b0100;
+const int TOP 		= 0b1000;
+
+fn Outcode Rect.compute_out_code(self, Vec2 pos) {
+	Outcode out = INSIDE;
+
+	if (pos.x < self.x) out |= LEFT;
+	if (pos.x > (double)(self.x + self.w)) out |= RIGHT;
+	if (pos.y < self.y) out |= BOTTOM;
+	if (pos.y > (double)(self.y + self.h)) out |= TOP;
+
+	return out;
+}
+
+fn bool Rect.cohen_suher_line_clips(self, Vec2 origin, Vec2 end) {
+	Outcode outcode_0 = self.compute_out_code(origin);
+	Outcode outcode_1 = self.compute_out_code(end);
+	bool accept = false;
+
+	usz i = 0;
+
+	while (true) {
+		i ++;
+		if (i > 1000) break;
+		
+		if (!(outcode_0 | outcode_1)) {
+			accept = true;
+			break;
+		}
+		else if (outcode_0 & outcode_1) {
+			break;
+		}
+		else {
+			Vec2 pos;
+			Outcode outcode_out = (outcode_1 > outcode_0) ? outcode_1 : outcode_0;
+
+			if (outcode_out & TOP) {
+				pos.x = origin.x + (end.x - origin.x) * ((double)(self.y + self.h) - origin.y) / (end.y - origin.y);
+				pos.y = (double)(self.y + self.h);
+			}
+			else if (outcode_out & BOTTOM) {
+				pos.x = origin.x + (end.x - origin.x) * (self.y - origin.y) / (end.y - origin.y);
+				pos.y = self.y;
+			}
+			if (outcode_out & TOP) {
+				pos.y = origin.y + (end.y - origin.y) * ((double)(self.x + self.w) - origin.x) / (end.x - origin.x);
+				pos.x = (double)(self.x + self.w);
+			}
+			else if (outcode_out & BOTTOM) {
+				pos.y = origin.y + (end.y - origin.y) * (self.x - origin.x) / (end.x - origin.x);
+				pos.x = self.x;
+			}
+
+			if (outcode_out == outcode_0) {
+				origin = pos;
+				outcode_0 = self.compute_out_code(origin);
+			}
+			else {
+				end = pos;
+				outcode_1 = self.compute_out_code(end);
+			}
+		}
+	}
+	return accept;
+}

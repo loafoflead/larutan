@@ -29,19 +29,33 @@ fn ThinkResult Entity.be_ticking_timer(Entity* self) {
 	}
 }
 
-fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
-	if (self.model.type != ModelType.SPRITE_SHEET) return ThinkResult.NOT_ME_ERROR;
-
-	self.body.dir += 0.1;
-
-/*
+fn ThinkResult Entity.be_spinner(Entity* self, Player* _p) {
 	ThinkResult res = self.be_ticking_timer();
 
 	if (res == ThinkResult.FINISHED) {
+		// TODO: make it so that spritesheets with multiple collumns 
+		// can be set to diff collumns with the rows representing the 
+		// facing and rows representing frame of animation.
+		self.body.dir_vel = 8.0;
+		io::printfn("MY DIR: %f", self.body.dir);
+		self.timer.reset();
+	}
+	return ThinkResult.OK;
+}
+
+fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
+	if (self.model.type != ModelType.SPRITE_SHEET) return ThinkResult.NOT_ME_ERROR;
+
+	ThinkResult res = self.be_ticking_timer();
+
+	if (res == ThinkResult.FINISHED) {
+		// TODO: make it so that spritesheets with multiple collumns 
+		// can be set to diff collumns with the rows representing the 
+		// facing and rows representing frame of animation.
 		self.model.sprite_sheet.increment();
 		self.timer.reset();
 	}
-*/
+
 	return ThinkResult.OK;
 
 }

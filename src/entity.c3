@@ -56,12 +56,15 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 struct Entity {
 	inline Body body;
 	EntityModel model;
+
 	Vec2 pos;
+	
 	bool dead;
+	
 	ThinkFunction think;
+	Timer timer;
 
 	EntityType type;
-	Timer timer;
 }
 
 fn Entity new_thinker(
