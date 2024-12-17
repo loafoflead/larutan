@@ -43,6 +43,8 @@ If you have any further issues, please open an issue.
 
 # NOTES
 
+The reason for this project are the recreational programming streams by [github.com/tsoding](Tosding). This isn't the first raycaster I've made but his streams encouraged me to try a new language so... I recommend his streams/vids. I'll list more inspirations as the project advances. 
+
 The project is in its very early stages... not many things work but the very basic engine. Plans are to optimise (very slow) and add real gameplay, notably using weapons, picking up weapons, enemy ai that works, and a physics implementation that isn't simply: 'try everything against everything else and hope for the best.' Thank you for your patience. 
 
 # CREDITS
@@ -50,4 +52,5 @@ The project is in its very early stages... not many things work but the very bas
 Credit for brick wall texture: [https://www.the3rdsequence.com/texturedb/texture/9/brick+wall/](TODO: find this person's name)
 
 TODO: 
+ - License (same as raylib)
  - Version française.

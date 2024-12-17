@@ -53,6 +53,14 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 	return rect;
 }
 
+fn BoundingBox Body.centred_raylib_box(Body* self, Vec2 pos, float height = 10.0) {
+	Rect centred = self.centred_box(pos);
+	Vec3f min = { centred.x, centred.y, -height/2.0f };
+	Vec3f max = { (centred.x + centred.w), (centred.y + centred.h), height/2.0f };
+	io::printfn("%f %f %f -> %f %f %f", min.x, min.y, min.z, max.x, max.y, max.z);
+	return BoundingBox { .min = min, .max = max };
+}
+
 struct Entity {
 	inline Body body;
 	EntityModel model;

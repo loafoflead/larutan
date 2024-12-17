@@ -144,7 +144,7 @@ fn void! main() {
 	for (int i = 0; i < world::MAP_HEIGHT; ++i) {
 		for (int j = 0; j < world::MAP_WIDTH; ++j) {
 			if (i == 0 && j != 0 || i == j) {
-				world.map[(i * world::MAP_WIDTH + j)] = 2;
+				world.map[(i * world::MAP_WIDTH + j)] = 1;
 			}
 		}
 	}
@@ -180,7 +180,7 @@ fn void! main() {
 			//sprite::new_spritesheet(2, 32*3, 32, {32, 32}, is_relative: true)!,
 			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
 			think_fn: &Entity.be_spinner,
-			body: entity::new_body(0.25, 0.25),
+			body: entity::new_body(1.25, 1.25),
 			timer: timer::new_secs(1.25),
 		)
 	);
@@ -292,7 +292,6 @@ fn void! main() {
 
 			int[<2>] cam_plane_og = (int[<2>])(pos + player.camera_plane) * (int)MINIMAP_SCALE_FACTOR;
 			int[<2>] cam_plane = (int[<2>])(pos + player.camera_plane + (player.dir + math::PI_2).angle_to_cart() * 50.0);
-
 
 			raylib::draw_line((int)pos.x, (int)pos.y, next.x, next.y, {0, 255, 0, 255});
 			//raylib::draw_line((int)pos.x, (int)pos.y, perp.x, perp.y, {255, 255, 0, 255});

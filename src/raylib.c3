@@ -38,6 +38,26 @@ struct NPatchInfo {
     int layout;             // Layout of the n-patch: 3x3, 1x3 or 3x1
 }
 
+// Ray, ray for raycasting
+struct Ray {
+    Vec3f position;       // Ray position (origin)
+    Vec3f direction;      // Ray direction
+}
+
+// RayCollision, ray hit information
+struct RayCollision {
+    bool hit;               // Did the ray hit something?
+    float distance;         // Distance to the nearest hit
+    Vec3f point;          // Point of the nearest hit
+    Vec3f normal;         // Surface normal of hit
+}
+
+// BoundingBox
+struct BoundingBox {
+    Vec3f min;            // Minimum vertex box-corner
+    Vec3f max;            // Maximum vertex box-corner
+}
+
 extern fn void init_window(int width, int height, char* title) @extern("InitWindow");
 extern fn void close_window() @extern("CloseWindow");
 extern fn bool window_should_close() @extern("WindowShouldClose"); 
@@ -80,3 +100,78 @@ extern fn Image image_from_image(Image image, Rect rec) @extern("ImageFromImage"
 extern fn bool is_image_ready(Image image) @extern("IsImageReady");                                                                    // Check if an image is ready
 
 extern fn void unload_image(Image image) @extern("UnloadImage");
+
+
+extern fn RayCollision get_ray_collision_box(Ray ray, BoundingBox box) @extern("GetRayCollisionBox");                                    // Get collision info between ray and box
+extern fn void draw_ray(Ray ray, Colour color) @extern("DrawRay");                                                                // Draw a ray line
+extern fn bool check_collision_lines(Vec2f startPos1, Vec2f endPos1, Vec2f startPos2, Vec2f endPos2, Vec2f *collisionPoint) @extern("CheckCollisionLines"); // Check the collision between two lines defined by two points each, returns collision point by reference
+
+fault HitError {
+    NOT_HIT,
+}
+
+fn Vec2f! line_collides_rect(Rect rect, Vec2f start_1, Vec2f start_2) {
+    Vec2f point;
+    bool hits = false;
+
+    /*
+        a----b
+        |    |
+        c----d
+
+        a: (x, y)
+        b: (x + w, y)
+        c: (x, y + h)
+        d: (x + w, y + h)
+    */
+
+    // ab
+    hits = check_collision_lines(
+        start_1, start_2,
+        {rect.x, rect.y},
+        {rect.x + rect.w, rect.y},
+        &point,
+    );
+
+    if (hits) {
+        return point;
+    }
+
+    // ac
+    hits = check_collision_lines(
+        start_1, start_2,
+        {rect.x, rect.y},
+        {rect.x, rect.y + rect.h},
+        &point,
+    );
+
+    if (hits) {
+        return point;
+    }
+
+    // cd
+    hits = check_collision_lines(
+        start_1, start_2,
+        {rect.x, rect.y + rect.h},
+        {rect.x + rect.x, rect.y + rect.h},
+        &point,
+    );
+
+    if (hits) {
+        return point;
+    }
+
+    // bd
+    hits = check_collision_lines(
+        start_1, start_2,
+        {rect.x + rect.w, rect.y},
+        {rect.x + rect.w, rect.y + rect.h},
+        &point,
+    );
+
+    if (hits) {
+        return point;
+    }
+
+    return HitError.NOT_HIT?;
+}

@@ -4,11 +4,13 @@ import std::math::vector;
 import entity;
 import player;
 import rendering;
+import raylib;
 
 import std::io;
 
 const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.1;
 const double MAX_NEARBY_DIST = 1.0;
+const float RAYCAST_DIST = 256f;
 
 def MapCell = short;
 def IndexList = List(<usz>);
@@ -41,11 +43,6 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 // TODO; small hitboxes seem to never or possibly only extremely rarely
 // be detected by raycasts. VALVE PLS FIX!
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
-	RaycastHit hit = rendering::cast_ray(this.map, og, dir);
-
-	// just checking if it hit or not...
-	if (hit.hit) return hit;
-
 	// check for entities and stuff now
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);
@@ -55,7 +52,7 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	}
 
 	// check if a cell that contains an entity is hit with a raycast
-	hit = rendering::cast_ray(temp_map, og, dir);
+	RaycastHit hit = rendering::cast_ray(temp_map, og, dir);
 
 	Vec2 hit_pt = og + dir * hit.dist;
 	double added_dist = 0;
@@ -64,12 +61,18 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 		// FIXME: extremely naive and frankly shit implementation
 		foreach(ent:ents) {
 			if (ent.dead) continue;
-			if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
+			if (!ent.can_collide()) continue;
+			//if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
 
-			if (ent.body.centred_box(ent.pos).cohen_suher_line_clips(og, hit_pt)) {
-				// TODO: find the actual position with some subtractions or whatever
+			Vec2f begin = Vec2f {(float)og.x, (float)og.y};
+			Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
+
+
+			if (try hit_pos = raylib::line_collides_rect(ent.body.centred_box(ent.pos), begin, end)) {
+				hit.dist = (begin - hit_pos).length();
 				return hit;
 			}
+
 			/*
 			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
 				// FIXME: why doesn't this work?
@@ -85,6 +88,11 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 			*/
 		}
 	}
+
+	hit = rendering::cast_ray(this.map, og, dir);
+
+	// just checking if it hit or not...
+	if (hit.hit) return hit;
 
 	hit.hit = false;
 	return hit;
@@ -102,11 +110,18 @@ fn void update_world_occupied_cells(World* world, EntityList entities, Player* p
 
 		if (!MAP_RECT.contains(ent.pos.round())) continue;
 
-		Rect rect = {(float)ent.pos.x.round(), (float)ent.pos.y.round(), 1, 1};
+		Rect[4] rects = {
+			{(float)ent.pos.x.floor(), (float)ent.pos.y.floor(), 1, 1},
+			{(float)ent.pos.x.ceil(), (float)ent.pos.y.ceil(), 1, 1},
+			{(float)ent.pos.x.ceil(), (float)ent.pos.y.floor(), 1, 1},
+			{(float)ent.pos.x.floor(), (float)ent.pos.y.ceil(), 1, 1},
+		};
 		
-		if (!rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
-			if (!world.occupied_cells.contains((ulong)(rect.y * MAP_WIDTH + rect.x))) {
-				world.occupied_cells.push((ulong)(rect.y * MAP_WIDTH + rect.x));
+		foreach(rect:rects) {
+			if (!rect.intersection(ent.body.centred_box(ent.pos)).equals(math::ZERO)) {
+				if (!world.occupied_cells.contains((ulong)(rect.y * MAP_WIDTH + rect.x))) {
+					world.occupied_cells.push((ulong)(rect.y * MAP_WIDTH + rect.x));
+				}
 			}
 		}
 	}
