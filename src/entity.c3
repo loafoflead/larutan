@@ -13,9 +13,12 @@ import thinkers;
 
 const usz NUM_COLLISION_NEIGHBOURS = 9;
 const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can collide with outside of 9 neighbours
+const usz FRICTIONLESS = 0b1;
 
-def EntityList = List(<Entity>);
-def ThinkFunction = fn ThinkResult(Entity*, Player*);
+
+fault EntityError {
+	INVALID_STATE,
+}
 
 struct Body {
 	bool simulated;
@@ -28,6 +31,9 @@ struct Body {
 	Vec2 acc;
 	Vec2 scale; // every hitbox is a rectangle or a box, so we just need width and height
 				// to create a hitbox centred on Entity.pos
+
+	usz flags; 
+	usz collision_layer; // TODO!
 }
 
 fn Body new_body(double w, double h, bool collides = true, bool simulated = true, float dir = 0.0, float dir_vel = 0.0) {
@@ -53,14 +59,6 @@ fn Rect Body.centred_box(Body* this, Vec2 pos) {
 	return rect;
 }
 
-fn BoundingBox Body.centred_raylib_box(Body* self, Vec2 pos, float height = 10.0) {
-	Rect centred = self.centred_box(pos);
-	Vec3f min = { centred.x, centred.y, -height/2.0f };
-	Vec3f max = { (centred.x + centred.w), (centred.y + centred.h), height/2.0f };
-	io::printfn("%f %f %f -> %f %f %f", min.x, min.y, min.z, max.x, max.y, max.z);
-	return BoundingBox { .min = min, .max = max };
-}
-
 struct Entity {
 	inline Body body;
 	EntityModel model;
@@ -73,6 +71,27 @@ struct Entity {
 	Timer timer;
 
 	EntityType type;
+	any state;
+}
+
+enum EntityType {
+	INDESTRUCTIBLE_DECORATION,
+	PICKUP,
+	FOLLOWER,
+	DECAL,
+	PROJECTILE,
+}
+
+struct ProjectileState {
+	float dmg;
+}
+
+fn any! Entity.get_state(&self, EntityType type) {
+	if (self.type != type) {
+		return EntityError.INVALID_STATE?;
+	}
+
+	return self.state;
 }
 
 fn Entity new_thinker(
@@ -92,6 +111,21 @@ fn Entity new_thinker(
 		.timer = timer,
 		.think = think_fn,
 		.dead = dead,
+	};
+}
+
+fn Entity new_projectile(Vec2 pos, Vec2 vel, EntityModel model, Body body, ProjectileState* state, Timer duration = timer::new_secs(5.0), ThinkFunction think_fn = &thinkers::default_projectile) {
+	body.flags |= FRICTIONLESS;
+	body.vel = vel;
+	return Entity {
+		.type = EntityType.PROJECTILE,
+		.pos = pos,
+		.model = model,
+		.body = body,
+		.think = think_fn,
+		.state = any_make(state, ProjectileState.typeid),
+		.timer = duration,
+		.dead = false,
 	};
 }
 
@@ -131,12 +165,7 @@ fn EntityModel* Entity.get_model(Entity* this) {
 	return &this.model;
 }
 
-enum EntityType {
-	INDESTRUCTIBLE_DECORATION,
-	PICKUP,
-	FOLLOWER,
-	DECAL,
-}
+
 
 fn bool Entity.is_type(Entity* this, EntityType t) {
 	return t == this.type;
@@ -164,7 +193,7 @@ fn void update_entities(EntityList* entities, Player* player) {
 				should_remove_dead_ents = true;
 			break;
 			case ThinkResult.NOT_ME_ERROR:
-				io::printfn("ERROR: Thinker has incorrect think function for its entity type.");
+				io::printfn("ERROR: Thinker has incorrect think function for its entity type, got %d", ent.type);
 			break;
 			case ThinkResult.OK:
 			break;
@@ -283,3 +312,7 @@ fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Bod
 	// TODO: return vel
 	return final_pos;
 }
+
+// here bc it screws with sublime text :,)
+def EntityList = List(<Entity>);
+def ThinkFunction = fn ThinkResult(Entity*, Player*);

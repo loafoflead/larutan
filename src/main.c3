@@ -158,9 +158,10 @@ fn void! main() {
 		),
 		.camera_plane = {0.0, 0.66},
 		.gun = NONE,
+		.weapons_unlocked = 0,
 		.moving = false,
 	};
-	Weapon player_prev_gun = Weapon.NONE;
+	WeaponDesc player_prev_gun = WeaponDesc.NONE;
 	Texture player_gun_tex;
 
 	ModelList to_render;
@@ -305,7 +306,7 @@ fn void! main() {
 		// DRAW PLAYER GUN
 		// ---------------------------------------------------------------------
 
-		if (player.gun != Weapon.NONE) {
+		if (player.gun != WeaponDesc.NONE) {
 			player::display_held(&player, &assets, &player_gun_tex, player_prev_gun);
 		}
 		player_prev_gun = player.gun;
@@ -319,6 +320,14 @@ fn void! main() {
 		if (raylib::is_key_pressed(raylib::KEY_RIGHT_ALT)) {
 			//draw_floor_and_ceiling = !draw_floor_and_ceiling;
 			draw_minimap = !draw_minimap;
+		}
+
+		for (int i = raylib::KEY_ONE; i <= raylib::KEY_NINE; i++) {
+			if (raylib::is_key_pressed(i)) {
+				short slot = (short)(i - raylib::KEY_ONE);
+				io::printfn("%d", slot);
+				player.select_weapon_slot(slot);
+			}
 		}
 
 		Vec2 acc = {0.0, 0.0};
@@ -376,9 +385,11 @@ fn void! main() {
 		foreach (&ent : world.entities) {
 			if (!ent.dead && ent.can_collide()) {
 				ent.pos = entity::process_body_collisions(world.map, world.entities, ent.pos, ent.body, ent);
-				ent.body.vel *= player::PLAYER_VEL_DAMPING;
+				if (ent.body.flags & entity::FRICTIONLESS == 0) {
+					ent.body.vel *= player::PLAYER_VEL_DAMPING;
+					ent.body.dir_vel *= 0.99;
+				}
 				ent.body.dir -= ent.body.dir_vel * raylib::get_frame_time();
-				ent.body.dir_vel *= 0.99;
 				ent.body.dir = ent.body.dir.rem(2.0*math::PI);
 			}
 		}

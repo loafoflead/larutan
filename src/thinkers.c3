@@ -59,9 +59,15 @@ fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
 
 }
 
-fn ThinkResult slowly_die(Entity* self, Player* _p) {
-	if (!self.is_type(EntityType.DECAL)) return ThinkResult.NOT_ME_ERROR;
+fn ThinkResult default_projectile(Entity* self, Player* _p) {
+	if (!self.is_type(EntityType.PROJECTILE)) return ThinkResult.NOT_ME_ERROR;
 
+	// TODO: die if hitting wall
+
+	return slowly_die(self, _p);
+}
+
+fn ThinkResult slowly_die(Entity* self, Player* _p) {
 	self.be_ticking_timer();
 
 	if (self.timer.finished()) {
@@ -83,7 +89,8 @@ fn ThinkResult be_pickup(Entity* self, Player* player) {
 	self.model.z = math::sin(raylib::get_time() / 20.0) * 100;
 	if (self.body.centred_box(self.pos).contains_rect(player.centred_hitbox())) {
 		self.dead = true;
-		player.gun = PISTOL;
+		player.unlock_weapon(WeaponDesc.PISTOL);
+		player.unlock_weapon(WeaponDesc.GLUE_GUN);
 		io::printfn("TODO: implement picking up items.");
 		return ThinkResult.KILLME;
 	}

@@ -1,13 +1,23 @@
 import std::math;
 import math;
 
-const int KEY_S = 83;
-const int KEY_W = 87;
-const int KEY_D = 68;
-const int KEY_A = 65;
-const int KEY_SPACE = 32;
-const int KEY_LEFT_ALT = 342;
-const int KEY_RIGHT_ALT = 346;
+const int KEY_S             = 83;
+const int KEY_W             = 87;
+const int KEY_D             = 68;
+const int KEY_A             = 65;
+const int KEY_SPACE         = 32;
+const int KEY_LEFT_ALT      = 342;
+const int KEY_RIGHT_ALT     = 346;
+const int KEY_ZERO          = 48;       // Key: 0
+const int KEY_ONE           = 49;       // Key: 1
+const int KEY_TWO           = 50;       // Key: 2
+const int KEY_THREE         = 51;       // Key: 3
+const int KEY_FOUR          = 52;       // Key: 4
+const int KEY_FIVE          = 53;       // Key: 5
+const int KEY_SIX           = 54;       // Key: 6
+const int KEY_SEVEN         = 55;       // Key: 7
+const int KEY_EIGHT         = 56;       // Key: 8
+const int KEY_NINE          = 57;       // Key: 9
 
 def Colour = char[<4>];
 
@@ -102,7 +112,6 @@ extern fn bool is_image_ready(Image image) @extern("IsImageReady");             
 extern fn void unload_image(Image image) @extern("UnloadImage");
 
 
-extern fn RayCollision get_ray_collision_box(Ray ray, BoundingBox box) @extern("GetRayCollisionBox");                                    // Get collision info between ray and box
 extern fn void draw_ray(Ray ray, Colour color) @extern("DrawRay");                                                                // Draw a ray line
 extern fn bool check_collision_lines(Vec2f startPos1, Vec2f endPos1, Vec2f startPos2, Vec2f endPos2, Vec2f *collisionPoint) @extern("CheckCollisionLines"); // Check the collision between two lines defined by two points each, returns collision point by reference
 

@@ -72,20 +72,6 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 				hit.dist = (begin - hit_pos).length();
 				return hit;
 			}
-
-			/*
-			for (int i = 0; i < (int)(1.0 / MAP_AABB_RAYCAST_CHECK_RAY_STEP); i ++) {
-				// FIXME: why doesn't this work?
-				if (ent.body.centred_box(ent.pos).contains(hit_pt)) {
-					hit.dist += added_dist;
-					hit.map_pos = (int[<2>])(og + dir * hit.dist);
-					hit.side = -1;
-					return hit;
-				}
-				added_dist += MAP_AABB_RAYCAST_CHECK_RAY_STEP;
-				hit_pt = (hit.dist + added_dist) * dir;
-			}
-			*/
 		}
 	}
 

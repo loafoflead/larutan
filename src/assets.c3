@@ -169,6 +169,18 @@ fn Asset*! Assets.get(Assets* self, AssetHandle* handle) {
 	return ass;
 }
 
+fn usz! Assets.index_of_name(Assets* self, String name) {
+	AssetHandle handle = AssetHandle { .name = name };
+
+	usz idx = self.assets_named.get(handle)!;
+	return idx;
+}
+
+fn usz! Assets.index_of_default(Assets* self, AssetType type) {
+	usz idx = self.default_names.get(type)!;
+	return idx;
+}
+
 fn Asset*! Assets.get_name(Assets* self, String name) {
 	AssetHandle handle = AssetHandle { .name = name };
 	return self.get(&handle)!;
