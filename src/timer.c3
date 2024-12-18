@@ -7,9 +7,21 @@
 		- void reset() 					-> resets the timer to 0
 */
 
-struct Timer {
+import std::io;
+
+struct Timer (Printable) {
 	float maxtime;
 	float time;
+}
+
+fn usz! Timer.to_format(&self, Formatter* formatter) @dynamic
+{
+	return formatter.print("{ time: %f/%f }", (1f - self.time), self.maxtime);
+}
+
+fn String Timer.to_new_string(&self, Allocator allocator = allocator::heap()) @dynamic
+{
+	return string::format("%s", *self, allocator: allocator);
 }
 
 fn Timer new_secs(float duration_secs) {
@@ -31,6 +43,11 @@ fn bool Timer.finished(Timer* this) {
 
 fn void Timer.reset(Timer* this) {
 	this.time = this.maxtime;
+}
+
+fn void Timer.reset_to_secs(&self, float secs) {
+	self.maxtime = secs;
+	self.time = secs;
 }
 
 fn void Timer.set_length_secs(Timer* this, float maxtime_secs) {

@@ -9,6 +9,7 @@ import raylib;
 import libc;
 import timer;
 
+import monster;
 import thinkers;
 
 const usz NUM_COLLISION_NEIGHBOURS = 9;
@@ -80,6 +81,7 @@ enum EntityType {
 	FOLLOWER,
 	DECAL,
 	PROJECTILE,
+	SMART_FELLA,
 }
 
 struct ProjectileState {
@@ -92,6 +94,26 @@ fn any! Entity.get_state(&self, EntityType type) {
 	}
 
 	return self.state;
+}
+
+fn Entity new_monster(
+	Vec2 pos,
+	EntityModel model,
+	Monster* state,
+	ThinkFunction think_fn = &thinkers::default_monster,
+	Timer timer = timer::new_secs(1.0),
+	Body body = new_body(1,1),
+) {
+	return Entity {
+		.type = EntityType.SMART_FELLA,
+		.pos = pos,
+		.model = model,
+		.body = body,
+		.timer = timer,
+		.think = think_fn,
+		.state = any_make(state, Monster.typeid),
+		.dead = false,
+	};
 }
 
 fn Entity new_thinker(
@@ -196,6 +218,7 @@ fn void update_entities(EntityList* entities, Player* player) {
 				io::printfn("ERROR: Thinker has incorrect think function for its entity type, got %d", ent.type);
 			break;
 			case ThinkResult.OK:
+			case ThinkResult.FINISHED:
 			break;
 			default:
 				io::printfn("ERROR: Unhandled ThinkResult %d", res);

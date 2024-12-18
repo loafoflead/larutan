@@ -11,11 +11,21 @@ enum ThinkResult {
 	FINISHED,
 }
 
-// DEBUG //
+// DEBUG \\
 import std::io;
 
 fn ThinkResult default_think(Entity* self, Player* player) {
 	// Do nothing
+	return ThinkResult.OK;
+}
+
+fn ThinkResult default_monster(Entity* self, Player* player) {
+	if (!self.is_type(EntityType.SMART_FELLA)) return ThinkResult.NOT_ME_ERROR;
+
+	self.state.update(player);
+
+	io::printfn("TODO: process monsters");
+
 	return ThinkResult.OK;
 }
 

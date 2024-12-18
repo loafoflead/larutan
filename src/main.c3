@@ -187,6 +187,15 @@ fn void! main() {
 	);
 
 	world.entities.push(
+		entity::new_monster(
+			{4,10},
+			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
+			TestMonster {}, // allocate this on the heap
+			body: entity::new_body(1.25, 1.25),
+		)
+	);
+
+	world.entities.push(
 		entity::new_thinker(
 			EntityType.PICKUP,
 			{5, 7},
