@@ -265,6 +265,9 @@ fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Bod
 			// TODO: maybe rename player_dist? it doesn't make a lot of sense in this situation
 			//sort::quicksort(entities, fn int(Entity* a, Entity* b) => (int)((b.sprite.player_dist - a.sprite.player_dist) * 1000.0));
 			
+			if (entities.len() <= i - NUM_COLLISION_NEIGHBOURS) {
+				continue;
+			}
 			Entity* ent = entities.get_ref(i - NUM_COLLISION_NEIGHBOURS);
 			if (ent != null && ent.can_collide() && ent.body.collides == true && !ent.dead && ent != this) {
 				rects[i] = ent.body.centred_box(ent.pos);

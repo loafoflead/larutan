@@ -107,7 +107,7 @@ extern fn void draw_texture_with_params(Texture texture, NPatchInfo nPatchInfo, 
 
 extern fn Image image_from_image(Image image, Rect rec) @extern("ImageFromImage");                                                  // Create an image from another image piece
 
-extern fn bool is_image_ready(Image image) @extern("IsImageReady");                                                                    // Check if an image is ready
+extern fn bool is_image_ready(Image image) @extern("IsImageValid");                                                                    // Check if an image is valid (data and parameters)
 
 extern fn void unload_image(Image image) @extern("UnloadImage");
 

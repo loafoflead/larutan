@@ -1,4 +1,5 @@
-RAYLIB_LIBRARY_SEARCH_PATH = ./raylib-5.0/lib
+RAYLIB_VER = 5.5
+RAYLIB_LIBRARY_SEARCH_PATH = /usr/local/lib/raylib-$(RAYLIB_VER)/lib
 RAYLIB_LIB_NAME = raylib
 C3_STD = --stdlib /usr/local/lib
 
