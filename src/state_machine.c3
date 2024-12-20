@@ -16,6 +16,7 @@ const usz STATE_QUEUE_LENGTH = 10;
 
 struct StateMachine (Printable) {
 	StateType state;
+	StateType previous;
 	Timer timer;
 	StateQueue queue;
 }
@@ -23,6 +24,7 @@ struct StateMachine (Printable) {
 fn StateMachine new_machine(StateType initial) {
 	return StateMachine {
 		.state = initial,
+		.previous = initial,
 		.timer = timer::new_secs(1.0),
 		.queue = StateQueue {},
 	};
@@ -42,10 +44,15 @@ fn StateType StateMachine.get(&self) {
 	return self.state;
 }
 
+fn bool StateMachine.changed(&self) {
+	return self.previous != self.state;
+}
+
 // Return the previous state
 fn StateType StateMachine.set(&self, StateType newstate) {
-	defer self.state = newstate; // ooo c3 is so fucking cool
-	return self.state;
+	self.previous = self.state;
+	self.state = newstate; // ooo c3 is so fucking cool
+	return self.previous;
 }
 
 // Return the current state
@@ -62,9 +69,11 @@ fn StateType StateMachine.queue_state(&self, StateType next, float secs_until) {
 
 fn void StateMachine.tick(&self, float dt_secs) {
 	self.timer.tick_secs(dt_secs);
+	self.previous = self.state;
 
 	if (self.timer.finished()) {
 		if (try StateQueueElement next = self.queue.pop_first()) {
+			self.previous = self.state;
 			self.state = next.next_state;
 
 			if (self.queue.len() != 0) {
@@ -72,12 +81,4 @@ fn void StateMachine.tick(&self, float dt_secs) {
 			}
 		}
 	}
-}
-
-fn StateMachine new(StateType initial) {
-	return StateMachine {
-		.state = initial,
-		.timer = timer::new_secs(1.0),
-		.queue = {},
-	};
 }

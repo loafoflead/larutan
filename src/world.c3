@@ -21,6 +21,7 @@ const Rect MAP_RECT = Rect { 0, 0, MAP_WIDTH, MAP_HEIGHT };
 
 struct World {
 	MapCell* map;
+	Player* player;
 	EntityList entities;
 	// list of cells that have a sprite in them, so that when raycasting into 
 	// the world we can check if we hit a sprite when entering 
@@ -56,6 +57,9 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 
 	Vec2 hit_pt = og + dir * hit.dist;
 	double added_dist = 0;
+	Vec2f begin = Vec2f {(float)og.x, (float)og.y};
+	Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
+
 	if (hit.hit) {
 		io::printfn("NEAR A GUY");
 		// FIXME: extremely naive and frankly shit implementation
@@ -64,21 +68,26 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 			if (!ent.can_collide()) continue;
 			//if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
 
-			Vec2f begin = Vec2f {(float)og.x, (float)og.y};
-			Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
-
-
 			if (try hit_pos = raylib::line_collides_rect(ent.body.centred_box(ent.pos), begin, end)) {
 				hit.dist = (begin - hit_pos).length();
+				hit.entity = &ent;
 				return hit;
 			}
 		}
+
 	}
 
 	hit = rendering::cast_ray(this.map, og, dir);
 
 	// just checking if it hit or not...
 	if (hit.hit) return hit;
+
+	if (try hit_pos = raylib::line_collides_rect(this.player.centred_hitbox(), begin, end)) {
+		hit.dist = (begin - hit_pos).length();
+		hit.hit_player = true;
+		hit.player = this.player;
+		return hit;
+	}
 
 	hit.hit = false;
 	return hit;

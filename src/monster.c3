@@ -4,6 +4,7 @@ import state_machine;
 import thinkers;
 import entity;
 import player;
+import world;
 
 struct PositionGoal {
 	Vec2 pos;
@@ -11,5 +12,5 @@ struct PositionGoal {
 }
 
 interface Monster {
-	fn ThinkResult think(Entity* ent, Player* pl);
+	fn ThinkResult think(Entity* ent, World* w, float dt);
 }

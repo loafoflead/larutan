@@ -204,12 +204,12 @@ fn bool Entity.can_collide(Entity* this) {
 }
 
 // TODO: replace this with the 'think' function for entities which have it
-fn void update_entities(EntityList* entities, Player* player) {
+fn void update_entities(World* w, EntityList* entities) {
 	bool should_remove_dead_ents = false;
 	foreach (i, &ent : *entities) {
 		if (ent.dead) continue;
 
-		ThinkResult res = ent.think(ent, player);
+		ThinkResult res = ent.think(ent, w);
 		switch (res) {
 			case ThinkResult.KILLME:
 				should_remove_dead_ents = true;
@@ -341,4 +341,4 @@ fn Vec2 process_body_collisions(MapCell* map, EntityList entities, Vec2 pos, Bod
 
 // here bc it screws with sublime text :,)
 def EntityList = List(<Entity>);
-def ThinkFunction = fn ThinkResult(Entity*, Player*);
+def ThinkFunction = fn ThinkResult(Entity*, World*);

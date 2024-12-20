@@ -162,6 +162,7 @@ fn void! main() {
 		.weapons_unlocked = 0,
 		.moving = false,
 	};
+	world.player = &player;
 	WeaponDesc player_prev_gun = WeaponDesc.NONE;
 	Texture player_gun_tex;
 
@@ -387,7 +388,7 @@ fn void! main() {
 		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);
 		player.dir_vel *= player::PLAYER_TURN_DAMPING;
 
-		entity::update_entities(&world.entities, &player);
+		entity::update_entities(&world, &world.entities);
 
 		if (player.body.vel.length_sq() < player::MINIMUM_MOVEMENT_THRESHOLD) {
 			player.body.vel = {0,0};

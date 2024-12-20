@@ -3,6 +3,7 @@ import entity;
 import raylib;
 import sprite;
 import monster;
+import world;
 import std::math;
 
 enum ThinkResult {
@@ -15,15 +16,15 @@ enum ThinkResult {
 // DEBUG \\
 import std::io;
 
-fn ThinkResult default_think(Entity* self, Player* player) {
+fn ThinkResult default_think(Entity* self, World* world) {
 	// Do nothing
 	return ThinkResult.OK;
 }
 
-fn ThinkResult default_monster(Entity* self, Player* player) {
+fn ThinkResult default_monster(Entity* self, World* world) {
 	if (!self.is_type(EntityType.SMART_FELLA)) return ThinkResult.NOT_ME_ERROR;
 
-	ThinkResult res = ((Monster)self.state).think(self, player);
+	ThinkResult res = ((Monster)self.state).think(self, world, raylib::get_frame_time());
 
 	if (res != ThinkResult.OK) return res;
 
@@ -40,7 +41,7 @@ fn ThinkResult Entity.be_ticking_timer(Entity* self) {
 	}
 }
 
-fn ThinkResult Entity.be_spinner(Entity* self, Player* _p) {
+fn ThinkResult Entity.be_spinner(Entity* self, World* world) {
 	ThinkResult res = self.be_ticking_timer();
 
 	if (res == ThinkResult.FINISHED) {
@@ -53,7 +54,7 @@ fn ThinkResult Entity.be_spinner(Entity* self, Player* _p) {
 	return ThinkResult.OK;
 }
 
-fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
+fn ThinkResult Entity.be_animated(Entity* self, World* world) {
 	if (self.model.type != ModelType.SPRITE_SHEET) return ThinkResult.NOT_ME_ERROR;
 
 	ThinkResult res = self.be_ticking_timer();
@@ -70,15 +71,15 @@ fn ThinkResult Entity.be_animated(Entity* self, Player* _p) {
 
 }
 
-fn ThinkResult default_projectile(Entity* self, Player* _p) {
+fn ThinkResult default_projectile(Entity* self, World* world) {
 	if (!self.is_type(EntityType.PROJECTILE)) return ThinkResult.NOT_ME_ERROR;
 
 	// TODO: die if hitting wall
 
-	return slowly_die(self, _p);
+	return slowly_die(self, null);
 }
 
-fn ThinkResult slowly_die(Entity* self, Player* _p) {
+fn ThinkResult slowly_die(Entity* self, World* world) {
 	self.be_ticking_timer();
 
 	if (self.timer.finished()) {
@@ -89,7 +90,7 @@ fn ThinkResult slowly_die(Entity* self, Player* _p) {
 	return ThinkResult.OK;
 }
 
-fn ThinkResult be_pickup(Entity* self, Player* player) {
+fn ThinkResult be_pickup(Entity* self, World* world) {
 	if (!self.is_type(EntityType.PICKUP)) return ThinkResult.NOT_ME_ERROR;
 
 	if (self.body.collides || self.body.simulated) {
@@ -98,20 +99,20 @@ fn ThinkResult be_pickup(Entity* self, Player* player) {
 	}
 
 	self.model.z = math::sin(raylib::get_time() / 20.0) * 100;
-	if (self.body.centred_box(self.pos).contains_rect(player.centred_hitbox())) {
+	if (self.body.centred_box(self.pos).contains_rect(world.player.centred_hitbox())) {
 		self.dead = true;
-		player.unlock_weapon(WeaponDesc.PISTOL);
-		player.unlock_weapon(WeaponDesc.GLUE_GUN);
+		world.player.unlock_weapon(WeaponDesc.PISTOL);
+		world.player.unlock_weapon(WeaponDesc.GLUE_GUN);
 		io::printfn("TODO: implement picking up items.");
 		return ThinkResult.KILLME;
 	}
 	return ThinkResult.OK;
 }
 
-fn ThinkResult be_follower(Entity* self, Player* player) {
+fn ThinkResult be_follower(Entity* self, World* world) {
 	if (!self.is_type(EntityType.FOLLOWER)) return ThinkResult.NOT_ME_ERROR;
 
-	Vec2 to_player = player.pos - self.pos;
+	Vec2 to_player = world.player.pos - self.pos;
 	self.body.vel += to_player * raylib::get_frame_time() * 10;
 	return ThinkResult.OK;
 }

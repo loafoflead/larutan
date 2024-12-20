@@ -181,7 +181,7 @@ fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, b
 					entity::new_decal(player.pos + player_facing * hit.dist, z, 9999, 5.0)
 				);
 
-				io::printn("Raycast hits");
+				io::printfn("Raycast hits: %s", hit);
 			}
 			else {
 				io::printn("Raycast MISSES");

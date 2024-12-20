@@ -6,6 +6,7 @@ import player;
 import assets;
 import sprite;
 import raylib;
+import entity;
 import std::sort;
 
 import std::io;
@@ -15,11 +16,35 @@ const double MAX_DDA_DIST = 45.0;
 const double FADEOUT_DIST = 30.0;
 const bool FADEOUT = true;
 
-struct RaycastHit {
+struct RaycastHit (Printable) {
 	double dist;
 	int side;
 	int[<2>] map_pos;
 	bool hit;
+	bool hit_player;
+	union {
+		Entity* entity;
+		Player* player;
+	}
+}
+
+fn usz! RaycastHit.to_format(&self, Formatter* formatter) @dynamic
+{
+	return formatter.printf(
+		"RaycastHit { dist: %f, side: %d, map pos: (%d,%d), hit: %s, %s: %p }", 
+		self.dist,
+		self.side,
+		self.map_pos.x, 
+		self.map_pos.y,
+		self.hit,
+		self.hit_player ? "player" : "entity",
+		self.hit_player ? (void*)self.player : (void*)self.entity,		 
+	);
+}
+
+fn String RaycastHit.to_new_string(&self, Allocator allocator = allocator::heap()) @dynamic
+{
+	return string::format("%s", *self, allocator: allocator);
 }
 
 fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
@@ -96,18 +121,20 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 
 	// FIXME: busted ass logic lmao
 	if (!hit) {
-		return RaycastHit { 0, 0, {0, 0}, false };
+		return RaycastHit { 0, 0, {0, 0}, false, false, null };
 	}
 	
 	if (map_x >= world::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= world::MAP_HEIGHT) {
-		return RaycastHit { math::DOUBLE_MAX, 0, {0, 0}, false };
+		return RaycastHit { math::DOUBLE_MAX, 0, {0, 0}, false, false, null };
 	}
 	
 	return RaycastHit { 
 		.dist = dist, 
 		.side = side, 
 		.map_pos = {map_x, map_y}, 
-		.hit = true
+		.hit = true,
+		.hit_player = false,
+		.entity = null,
 	};
 }
 
