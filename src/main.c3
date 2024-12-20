@@ -18,6 +18,8 @@ import sprite;
 import player;
 import thinkers;
 
+import test_monster;
+import state_machine;
 
 const String MISSING_FILEPATH = "assets/missing.png";
 
@@ -27,7 +29,6 @@ const Colour BACKGROUND_COL = {0x18, 0x18, 0x18, 0xFF};
 
 const double FOV_ANGLE = 30 * (math::PI/180);//math::PI/2.0;
 const double PITCH_ANGLE = 0.66;
-
 
 const int WIDTH_FACTOR = 4;
 const int HEIGHT_FACTOR = 3;
@@ -186,11 +187,16 @@ fn void! main() {
 		)
 	);
 
+	TestMonster* tm = calloc(TestMonster.sizeof);
+	tm.init(TMState.IDLE);
+//	machine = state_machine::new_machine(<TMState>)(TMState.IDLE);
+	io::printfn("%s", tm.state.machine);
+
 	world.entities.push(
 		entity::new_monster(
-			{4,10},
+			{8,10},
 			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
-			TestMonster {}, // allocate this on the heap
+			any_make(tm, TestMonster.typeid), // allocate this on the heap
 			body: entity::new_body(1.25, 1.25),
 		)
 	);

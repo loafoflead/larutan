@@ -16,7 +16,7 @@ struct Timer (Printable) {
 
 fn usz! Timer.to_format(&self, Formatter* formatter) @dynamic
 {
-	return formatter.print("{ time: %f/%f }", (1f - self.time), self.maxtime);
+	return formatter.printf("{ time: %f/%f }", (1f - self.time), self.maxtime);
 }
 
 fn String Timer.to_new_string(&self, Allocator allocator = allocator::heap()) @dynamic

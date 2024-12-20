@@ -99,7 +99,7 @@ fn any! Entity.get_state(&self, EntityType type) {
 fn Entity new_monster(
 	Vec2 pos,
 	EntityModel model,
-	Monster* state,
+	any state,
 	ThinkFunction think_fn = &thinkers::default_monster,
 	Timer timer = timer::new_secs(1.0),
 	Body body = new_body(1,1),
@@ -111,7 +111,7 @@ fn Entity new_monster(
 		.body = body,
 		.timer = timer,
 		.think = think_fn,
-		.state = any_make(state, Monster.typeid),
+		.state = state,
 		.dead = false,
 	};
 }
@@ -215,13 +215,13 @@ fn void update_entities(EntityList* entities, Player* player) {
 				should_remove_dead_ents = true;
 			break;
 			case ThinkResult.NOT_ME_ERROR:
-				io::printfn("ERROR: Thinker has incorrect think function for its entity type, got %d", ent.type);
+				io::printfn("ERROR: Thinker has incorrect think function for its entity type, got %s", EntityType.names[ent.type]);
 			break;
 			case ThinkResult.OK:
 			case ThinkResult.FINISHED:
 			break;
 			default:
-				io::printfn("ERROR: Unhandled ThinkResult %d", res);
+				io::printfn("ERROR: Unhandled ThinkResult %s", ThinkResult.names[res]);
 			break;
 		}
 		/* switch (ent.type) {

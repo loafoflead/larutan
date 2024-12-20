@@ -2,6 +2,7 @@ import player;
 import entity;
 import raylib;
 import sprite;
+import monster;
 import std::math;
 
 enum ThinkResult {
@@ -22,9 +23,9 @@ fn ThinkResult default_think(Entity* self, Player* player) {
 fn ThinkResult default_monster(Entity* self, Player* player) {
 	if (!self.is_type(EntityType.SMART_FELLA)) return ThinkResult.NOT_ME_ERROR;
 
-	self.state.update(player);
+	ThinkResult res = ((Monster)self.state).think(self, player);
 
-	io::printfn("TODO: process monsters");
+	if (res != ThinkResult.OK) return res;
 
 	return ThinkResult.OK;
 }
