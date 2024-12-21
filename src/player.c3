@@ -15,8 +15,8 @@ const float PLAYER_VEL_DAMPING = 0.9;
 
 const float MINIMUM_MOVEMENT_THRESHOLD = 0.01; // sq metres per second (squared?)
 
-const float PLAYER_TURN_ACCELERATION = math::PI_2; // RADIANS per second per second
-const float PLAYER_TURN_DAMPING = 0.7; // RADIANS per second
+const float PLAYER_TURN_ACCELERATION = math::PI*20; // RADIANS per second per second
+const float PLAYER_TURN_DAMPING = 0.8; // RADIANS per second
 const float PLAYER_SIDE_LENGTH = 0.2f;
 
 const double PROJECTILE_SPAWN_DIST = 2.0;
@@ -81,12 +81,10 @@ struct Player {
 	inline Body body;
 	
 	Vec2 pos;
-	Vec2 camera_plane;
 	// inv
 	short weapons_unlocked;
 	WeaponDesc gun;
 	// flags
-	bool moving;
 }
 
 fn Rect Player.centred_hitbox(Player* this) {
@@ -173,7 +171,7 @@ fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, b
 	switch(player.gun) {
 
 		case WeaponDesc.PISTOL:
-			RaycastHit hit = world.cast_ray(player.pos, player_facing, ents);
+			RaycastHit hit = world.cast_ray(player.pos, player_facing);
 			if (hit.hit) {
 				double z = 0.5;
 				

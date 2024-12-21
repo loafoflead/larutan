@@ -48,7 +48,7 @@ fn ThinkResult Entity.be_spinner(Entity* self, World* world) {
 		// TODO: make it so that spritesheets with multiple collumns 
 		// can be set to diff collumns with the rows representing the 
 		// facing and rows representing frame of animation.
-		self.body.dir_vel = 8.0;
+		self.body.dir_vel = 50.0;
 		self.timer.reset();
 	}
 	return ThinkResult.OK;

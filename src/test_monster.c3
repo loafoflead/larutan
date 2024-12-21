@@ -10,7 +10,7 @@ import std::io;
 
 def TestMonsterState = MonsterState(<TMState>);
 
-const float TEST_ACTIVATION_TIME = 1.5;
+const float TEST_ACTIVATION_TIME = 3.5;
 
 enum TMState: usz {
 	IDLE,
@@ -31,11 +31,12 @@ fn void TestMonster.init(&self, TMState initial_state) {
 
 fn ThinkResult TestMonster.think(&self, Entity* ent, World* w, float dt) @dynamic {
 	TMState s = self.state.machine.get();
+	// FIXME: crashed when player is OOB
 	switch (s) {
 		case IDLE:
 			// if seeing the player tick timer
-			//if (self.state.can_see_player(w)) {
-			if (ent.pos.distance(w.player.pos) < 3.0) {
+//			if (ent.pos.distance(w.player.pos) < 3.0) {
+			if (monster::can_see_player(w, ent, ent.pos)) {
 				ent.timer.tick_secs(dt);
 				if (ent.timer.finished()) {
 					self.state.machine.set(FOLLOWING);
@@ -44,7 +45,6 @@ fn ThinkResult TestMonster.think(&self, Entity* ent, World* w, float dt) @dynami
 			else {
 				ent.timer.reset_to_secs(TEST_ACTIVATION_TIME);
 			}
-			// TODO: implement checking if player is in FOV
 		break;
 		default:
 			io::printfn("TestMonster: Unimplemented state %s", TMState.names[s]);

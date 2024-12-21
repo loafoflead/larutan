@@ -24,9 +24,11 @@ fault EntityError {
 struct Body {
 	bool simulated;
 	bool collides;
+	bool moving;
 	// in radians
 	double dir;
 	double dir_vel;
+	Vec2 camera_plane;
 
 	Vec2 vel;
 	Vec2 acc;
@@ -37,7 +39,27 @@ struct Body {
 	usz collision_layer; // TODO!
 }
 
-fn Body new_body(double w, double h, bool collides = true, bool simulated = true, float dir = 0.0, float dir_vel = 0.0) {
+fn void Body.update(&self, float dt) {
+	self.dir -= self.dir_vel * dt;
+	self.dir = self.dir.rem(2.0*math::PI);
+	self.camera_plane = self.camera_plane.rotate(-(double)(self.dir_vel * dt));
+	
+	if (self.flags & entity::FRICTIONLESS == 0) {
+		self.vel *= player::PLAYER_VEL_DAMPING;
+	}
+
+	if (self.vel.length_sq() < player::MINIMUM_MOVEMENT_THRESHOLD) {
+		self.vel = {0,0};
+		self.moving = false;
+	}
+	else {
+		self.moving = true;
+	}
+
+	self.dir_vel *= player::PLAYER_TURN_DAMPING;
+}
+
+fn Body new_body(double w, double h, bool collides = true, bool simulated = true, float dir = math::PI, float dir_vel = 0.0) {
 	Body body = Body {
 		.simulated = true,
 		.collides = true,
@@ -45,6 +67,7 @@ fn Body new_body(double w, double h, bool collides = true, bool simulated = true
 		.acc = {0.0, 0.0},
 		.dir = dir,
 		.dir_vel = dir_vel,
+		.camera_plane = {0, 0.45}, // default small FOV
 		.scale = {w, h},
 	};
 	return body;

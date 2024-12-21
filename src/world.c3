@@ -32,7 +32,7 @@ struct World {
 }
 
 fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
-	RaycastHit hit = this.cast_ray(og, dir, ents);
+	RaycastHit hit = this.cast_ray(og, dir);
 	if (hit.hit) return true;
 	return false;
 }
@@ -41,9 +41,11 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 // and therefore inside an entity on the border between two or more cells
 // when hit, so the hit is registered way far off from where it actually 
 // hits the entity's hitbox
-// TODO; small hitboxes seem to never or possibly only extremely rarely
+// TODO: small hitboxes seem to never or possibly only extremely rarely
 // be detected by raycasts. VALVE PLS FIX!
-fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
+// TODO: make this return an optional for snazzy syntax & hit detection
+// TODO: make exclude better lmao hacky fix
+fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null) {
 	// check for entities and stuff now
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);
@@ -61,9 +63,9 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
 
 	if (hit.hit) {
-		io::printfn("NEAR A GUY");
 		// FIXME: extremely naive and frankly shit implementation
-		foreach(ent:ents) {
+		foreach(ent:this.entities) {
+			if (&ent == exclude) continue;
 			if (ent.dead) continue;
 			if (!ent.can_collide()) continue;
 			//if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
@@ -77,17 +79,18 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 
 	}
 
-	hit = rendering::cast_ray(this.map, og, dir);
-
-	// just checking if it hit or not...
-	if (hit.hit) return hit;
-
 	if (try hit_pos = raylib::line_collides_rect(this.player.centred_hitbox(), begin, end)) {
 		hit.dist = (begin - hit_pos).length();
+		hit.hit = true;
 		hit.hit_player = true;
 		hit.player = this.player;
 		return hit;
 	}
+
+	hit = rendering::cast_ray(this.map, og, dir);
+
+	// just checking if it hit or not...
+	if (hit.hit) return hit;
 
 	hit.hit = false;
 	return hit;

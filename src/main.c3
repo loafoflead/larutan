@@ -157,7 +157,8 @@ fn void! main() {
 			player::PLAYER_SIDE_LENGTH, player::PLAYER_SIDE_LENGTH,
 			dir: math::PI,
 		),
-		.camera_plane = {0.0, 0.66},
+		.camera_plane = {0.0, 0.78}, // sort of a measure of how far on either side the FOV 
+									 // extends to, initially perpendicular
 		.gun = NONE,
 		.weapons_unlocked = 0,
 		.moving = false,
@@ -329,6 +330,8 @@ fn void! main() {
 
 		raylib::end_drawing();
 
+		float dt = raylib::get_frame_time();
+
 		// ---------------------------------------------------------------------
 		// PROCESS PLAYER CONTROLS
 		// ---------------------------------------------------------------------
@@ -376,37 +379,23 @@ fn void! main() {
 
 		acc = acc.normalize() * player::PLAYER_ACCELERATION;
 		
-		player.body.vel += acc * raylib::get_frame_time();
+		player.body.vel += acc * dt;
 
 		player.pos = entity::process_body_collisions(world.map, world.entities, player.pos, player.body, null);
-		player.body.vel *= player::PLAYER_VEL_DAMPING;
 
-		player.dir_vel += turn_acc * (double)raylib::get_frame_time();
-		player.dir -= player.dir_vel;
-		player.dir = player.dir.rem(2.0*math::PI);
+		player.dir_vel += turn_acc * (double)dt;
 		
-		player.camera_plane = player.camera_plane.rotate(-(double)player.dir_vel);
-		player.dir_vel *= player::PLAYER_TURN_DAMPING;
+		player.body.update(dt);
 
 		entity::update_entities(&world, &world.entities);
 
-		if (player.body.vel.length_sq() < player::MINIMUM_MOVEMENT_THRESHOLD) {
-			player.body.vel = {0,0};
-			player.moving = false;
-		}
-		else {
-			player.moving = true;
-		}
+		
 
 		foreach (&ent : world.entities) {
 			if (!ent.dead && ent.can_collide()) {
 				ent.pos = entity::process_body_collisions(world.map, world.entities, ent.pos, ent.body, ent);
-				if (ent.body.flags & entity::FRICTIONLESS == 0) {
-					ent.body.vel *= player::PLAYER_VEL_DAMPING;
-					ent.body.dir_vel *= 0.99;
-				}
-				ent.body.dir -= ent.body.dir_vel * raylib::get_frame_time();
-				ent.body.dir = ent.body.dir.rem(2.0*math::PI);
+
+				ent.body.update(dt);	
 			}
 		}
 
