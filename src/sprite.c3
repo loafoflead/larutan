@@ -1,6 +1,7 @@
 import std::math::vector;
 import std::collections::list;
 import std::math;
+import assets;
 
 def ModelList = List(<EntityModel*>);
 
@@ -40,9 +41,7 @@ enum ModelType {
 }
 
 struct SpriteSheet {
-	usz w, h;
-	usz rows, cols;
-	usz[<2>] sprite_dimensions;
+	SpriteSheetData* dims;
 	usz current_index;
 }
 
@@ -50,32 +49,36 @@ fn usz[<4>]! SpriteSheet.get_nth(&self, int n = -1) {
 	if (n == -1) {
 		n = (int)self.current_index;
 	}
-	usz count = self.rows * self.cols;
+	usz count = self.dims.rows * self.dims.cols;
 	if (n >= count) return SpriteSheetError.NTH_TOO_FAR?; 
 	// n = rows * y + x
 	// x = n % rows
 	// y = (n - x) / self.rows
-	usz x = n % self.rows;
-	usz img_x  = x * self.sprite_dimensions.x;
-	usz img_y  = ((n - x)/self.rows) * self.sprite_dimensions.y;
+	usz x = n % self.dims.rows;
+	usz img_x  = x * self.dims.sprite_dimensions.x;
+	usz img_y  = ((n - x)/self.dims.rows) * self.dims.sprite_dimensions.y;
 	usz[<4>] rect = {
 		img_x,
 		img_y,
-		self.sprite_dimensions.x,
-		self.sprite_dimensions.y,
+		self.dims.sprite_dimensions.x,
+		self.dims.sprite_dimensions.y,
 	};
 	return rect;
 }
 
-// TODO: decrement and friends
 fn void SpriteSheet.increment(&self) {
 	self.current_index += 1;
-	self.current_index %= self.cols*self.rows;
+	self.current_index %= self.dims.cols*self.dims.rows;
+}
+
+fn void SpriteSheet.decrement(&self) {
+	self.current_index -= 1;
+	self.current_index %= self.dims.cols*self.dims.rows;
 }
 
 fn void SpriteSheet.set_index(&self, usz i) {
 	self.current_index = i;
-	self.current_index %= self.cols*self.rows;
+	self.current_index %= self.dims.cols*self.dims.rows;
 }
 
 struct Sprite {
@@ -85,19 +88,10 @@ struct Sprite {
 
 // sprite dimensions is the size of a single sprite in the sheet
 // TODO: support sprites of different sizes with a vec
-fn EntityModel! new_spritesheet(usz texture_index, usz w, usz h, usz[<2>] sprite_dimensions, bool is_relative = false, double z = 0.0, Vec2 uv_scale_division = {1.0, 1.0}) {
-	if (w % sprite_dimensions.x != 0) {
-		return SpriteSheetError.WIDTH_MISMATCH?;
-	}
-	if (h % sprite_dimensions.y != 0) {
-		return SpriteSheetError.HEIGHT_MISMATCH?;
-	}
+fn EntityModel! new_spritesheet(usz texture_index, SpriteSheetData* data, usz initial_index = 0, bool is_relative = false, double z = 0.0, Vec2 uv_scale_division = {1.0, 1.0}) {
 	SpriteSheet sprite_sheet = SpriteSheet {
-		.w = w, 
-		.h = h,
-		.rows = w / sprite_dimensions.x,
-		.cols = h / sprite_dimensions.y,
-		.sprite_dimensions = sprite_dimensions,
+		.dims = data,
+		.current_index = initial_index,
 	};
 
 	EntityModel new = EntityModel {
@@ -123,7 +117,7 @@ fn void EntityModel.set_spritesheet_portion(&self, Vec2 player_pos) {
 			Vec2 me_to_player = player_pos - self.pos;
 			double ang = math::atan2(me_to_player.x, me_to_player.y) + self.dir; 
 
-			usz n = self.sprite_sheet.rows * self.sprite_sheet.cols;
+			usz n = self.sprite_sheet.dims.rows * self.sprite_sheet.dims.cols;
 			usz idx = (usz)((ang / (2.0 * math::PI)) * (double)n);
 
 			self.sprite_sheet.set_index(idx);

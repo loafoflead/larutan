@@ -41,12 +41,9 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 // and therefore inside an entity on the border between two or more cells
 // when hit, so the hit is registered way far off from where it actually 
 // hits the entity's hitbox
-// TODO: small hitboxes seem to never or possibly only extremely rarely
-// be detected by raycasts. VALVE PLS FIX!
 // TODO: make this return an optional for snazzy syntax & hit detection
 // TODO: make exclude better lmao hacky fix
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null) {
-	// check for entities and stuff now
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);
 
@@ -63,7 +60,6 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 	Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
 
 	if (hit.hit) {
-		// FIXME: extremely naive and frankly shit implementation
 		foreach(ent:this.entities) {
 			if (&ent == exclude) continue;
 			if (ent.dead) continue;
@@ -98,8 +94,7 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 
 fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
 	world.occupied_cells.clear();
-	// TODO: shit
-	// FIXME: i unironically have no fucking idea what this routine does, 
+	// NOTE: i unironically have no fucking idea what this routine does, 
 	// but hopefully its now more efficient (i.e. doesn't bring the whole
 	// game to its knees for some reason (possibly the (before the fix) triply
 	// nested for loops run every frame))

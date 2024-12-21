@@ -96,29 +96,18 @@ fn void! main() {
 	io::printfn("%d", assets.default_names.get(AssetType.PNGIMAGE)!!);
 
 	(void)assets.load_many({
-		{"pistol", "assets/weapons/pistol.png", AssetType.PNGIMAGE},
+		{"pistol", "assets/weapons/pistol.png", AssetType.PNGIMAGE, {}},
 	})!;
 	AssetHandleList world_textures = assets.load_many({
-		{"col_test", "assets/col_test.png", AssetType.PNGIMAGE},
-		{"brick_wall", "assets/brick_wall.png", AssetType.PNGIMAGE},
+		{"col_test", "assets/col_test.png", AssetType.PNGIMAGE, {}},
+		{"brick_wall", "assets/brick_wall.png", AssetType.PNGIMAGE, {}},
 	})!;
 	AssetHandleList sprite_textures = assets.load_many({
-		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE},
-		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE},
-		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE},
-		{"guy", "assets/sprites/8boy.png", AssetType.PNGIMAGE},
-	})!;
-	sprite_textures.len();
-	/*Image* textures = (Image*)calloc(TEXTURE_COUNT * Image.sizeof);
-	String[TEXTURE_COUNT] image_paths = {
-		"assets/col_test.png",
-		"assets/brick_wall.png",
-		"assets/sprites/barrel.png",
-		"assets/sprites/boy.png",
-	};
-	for (int i = 0; i < TEXTURE_COUNT; i++) {
-		textures[i] = raylib::load_image(image_paths[i]);
-	}*/
+		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE, {}},
+		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE, {}},
+		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE, {}},
+		{"guy", "assets/sprites/8boy.png", AssetType.SPRITESHEET, assets::spritesheet(8*32, 32, {32,32})!! },
+	})!!;
 
 	Image render_img = raylib::gen_image_colour(RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT, WHITE);
 	Texture tex = raylib::load_texture_from_image(render_img);
@@ -134,7 +123,6 @@ fn void! main() {
 	defer free(pixels);
 
 	defer assets.free();
-	//defer free(textures);
 
 	if (assets.assert_loaded() == false) {
 		return; // TODO: Error handling
@@ -181,8 +169,7 @@ fn void! main() {
 		entity::new_thinker(
 			EntityType.INDESTRUCTIBLE_DECORATION,
 			{4,10},
-			//sprite::new_spritesheet(2, 32*3, 32, {32, 32}, is_relative: true)!,
-			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
+			sprite::new_spritesheet(3, &((AssetDescriptor*)assets.get_name_desc("guy")!!).spritesheet_info, is_relative: true)!,
 			think_fn: &Entity.be_spinner,
 			body: entity::new_body(1.25, 1.25),
 			timer: timer::new_secs(1.25),
@@ -191,14 +178,13 @@ fn void! main() {
 
 	TestMonster* tm = calloc(TestMonster.sizeof);
 	tm.init(TMState.IDLE);
-//	machine = state_machine::new_machine(<TMState>)(TMState.IDLE);
 	io::printfn("%s", tm.state.machine);
 
 	world.entities.push(
 		entity::new_monster(
 			{8,10},
-			sprite::new_spritesheet(3, 32*8, 32, {32, 32}, is_relative: true)!,
-			any_make(tm, TestMonster.typeid), // allocate this on the heap
+			sprite::new_spritesheet(3, &((AssetDescriptor*)assets.get_name_desc("guy")!!).spritesheet_info, is_relative: true)!,
+			any_make(tm, TestMonster.typeid),
 			body: entity::new_body(1.25, 1.25),
 		)
 	);
@@ -337,7 +323,7 @@ fn void! main() {
 		// ---------------------------------------------------------------------
 
 		if (raylib::is_key_pressed(raylib::KEY_RIGHT_ALT)) {
-			//draw_floor_and_ceiling = !draw_floor_and_ceiling;
+			draw_floor_and_ceiling = !draw_floor_and_ceiling;
 			draw_minimap = !draw_minimap;
 		}
 

@@ -1,3 +1,4 @@
  - naming a function 'default' doesn't provide a useful error msg
  - when not calling a function with correct num of args the msg sometimes says 'expected 0 arguments'
 presumably to do with 'self' being an implicit argument
+ - Some kind of weird instant crash, think it may be a problem with error handling??
