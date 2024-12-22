@@ -1,16 +1,17 @@
+module entity;
+
 import std::math::vector;
 import std::collections::list;
 import std::io;
-import math;
-import sprite;
+import utils;
+import rendering;
 import player;
 import world;
-import raylib;
+import bindings;
 import libc;
-import timer;
 
-import monster;
-import thinkers;
+import enemy;
+import entity::thinkers;
 
 const usz NUM_COLLISION_NEIGHBOURS = 9;
 const usz NUM_ADDITIONAL_COLLISION_RECT = 10; // how many more things we can collide with outside of 9 neighbours

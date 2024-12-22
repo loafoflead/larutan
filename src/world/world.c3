@@ -1,10 +1,12 @@
+module world;
+
 import std::collections::list;
-import math;
+import utils::math;
 import std::math::vector;
 import entity;
 import player;
 import rendering;
-import raylib;
+import bindings::raylib;
 
 import std::io;
 
@@ -64,7 +66,7 @@ fn RaycastHit! World.hits_player(&self, Vec2 og, Vec2 dir, float range = RAYCAST
 // TODO: make this return an optional for snazzy syntax & hit detection
 // TODO: make exclude better lmao hacky fix
 // TODO: make range a parameter
-fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null) {
+fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null, bool exclude_player = false) {
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);
 
@@ -96,12 +98,14 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 
 	}
 
-	if (try hit_pos = raylib::line_collides_rect(this.player.centred_hitbox(), begin, end)) {
-		hit.dist = (begin - hit_pos).length();
-		hit.hit = true;
-		hit.hit_player = true;
-		hit.player = this.player;
-		return hit;
+	if (!exclude_player) {
+		if (try hit_pos = raylib::line_collides_rect(this.player.centred_hitbox(), begin, end)) {
+			hit.dist = (begin - hit_pos).length();
+			hit.hit = true;
+			hit.hit_player = true;
+			hit.player = this.player;
+			return hit;
+		}
 	}
 
 	hit = rendering::cast_ray(this.map, og, dir);
@@ -113,6 +117,7 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 	return hit;
 }
 
+// TODO: make this actually work por favor
 fn void update_world_occupied_cells(World* world, EntityList entities, Player* player) {
 	world.occupied_cells.clear();
 	// NOTE: i unironically have no fucking idea what this routine does, 

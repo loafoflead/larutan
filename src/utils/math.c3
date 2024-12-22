@@ -1,3 +1,5 @@
+module utils::math;
+
 import std::math;
 
 struct Rect {

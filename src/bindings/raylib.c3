@@ -1,5 +1,7 @@
+module bindings::raylib;
+
 import std::math;
-import math;
+import utils;
 
 const int KEY_S             = 83;
 const int KEY_W             = 87;

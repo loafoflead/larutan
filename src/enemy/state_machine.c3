@@ -1,6 +1,6 @@
-module state_machine(<StateType>);
+module enemy::state_machine(<StateType>);
 
-import timer;
+import utils::timer;
 import std::collections::list;
 import std::collections::tuple;
 import std::io;

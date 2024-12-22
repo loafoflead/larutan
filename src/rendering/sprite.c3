@@ -1,3 +1,5 @@
+module rendering::sprite;
+
 import std::math::vector;
 import std::collections::list;
 import std::math;

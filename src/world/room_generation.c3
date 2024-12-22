@@ -1,4 +1,4 @@
-module room_gen;
+module world::room_gen;
 
 import std::io;
 import std::core::mem;

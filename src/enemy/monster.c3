@@ -1,7 +1,7 @@
-import test_monster;
+module enemy::monster;
+
+import enemy;
 import std::math::vector;
-import state_machine;
-import thinkers;
 import entity;
 import player;
 import world;

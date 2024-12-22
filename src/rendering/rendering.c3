@@ -1,11 +1,13 @@
+module rendering;
+
 import std::math;
 import main;
-import math;
+import utils;
 import world;
 import player;
 import assets;
-import sprite;
-import raylib;
+import rendering::sprite;
+import bindings::raylib;
 import entity;
 import std::sort;
 

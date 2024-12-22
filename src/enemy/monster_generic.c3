@@ -1,7 +1,6 @@
-module monster_generic(<StateType>);
+module enemy::monster_generic(<StateType>);
 
-import monster;
-import state_machine;
+import enemy::state_machine, enemy::monster;
 
 def Machine = StateMachine(<StateType>);
 

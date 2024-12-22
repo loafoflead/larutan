@@ -2,9 +2,9 @@ import std::collections::list;
 import std::collections;
 import std::math;
 import std::math::vector;
-import raylib;
+import bindings;
 import main;
-import sprite;
+import rendering;
 
 import std::io;
 

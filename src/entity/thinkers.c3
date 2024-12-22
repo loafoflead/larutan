@@ -1,8 +1,10 @@
+module entity::thinkers;
+
 import player;
 import entity;
-import raylib;
-import sprite;
-import monster;
+import bindings;
+import rendering;
+import enemy;
 import world;
 import std::math;
 

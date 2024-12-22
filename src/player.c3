@@ -1,12 +1,11 @@
 import std::math::vector;
-import math;
+import utils;
 import assets;
-import raylib;
+import bindings;
 import entity;
 import world;
 import main;
 import rendering;
-import sprite;
 
 import std::io;
 
@@ -171,7 +170,7 @@ fn void attack(World* world, Assets* assets, EntityList* ents, Player* player, b
 	switch(player.gun) {
 
 		case WeaponDesc.PISTOL:
-			RaycastHit hit = world.cast_ray(player.pos, player_facing);
+			RaycastHit hit = world.cast_ray(player.pos, player_facing, exclude_player: true);
 			if (hit.hit) {
 				double z = 0.5;
 				

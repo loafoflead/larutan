@@ -7,6 +7,8 @@
 		- void reset() 					-> resets the timer to 0
 */
 
+module utils::timer;
+
 import std::io;
 
 struct Timer (Printable) {

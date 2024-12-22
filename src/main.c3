@@ -6,21 +6,15 @@ import libc;
 import std::thread;
 import std::collections::list;
 
-import raylib;
+import bindings;
 import rendering;
-import math;
-import timer;
-import room_gen;
+import utils;
 import world;
 import assets;
-import entity;
-import sprite;
+import entity, entity::thinkers;
 import player;
-import thinkers;
 
-import test_monster;
-import monster;
-import state_machine;
+import enemy;
 
 const String MISSING_FILEPATH = "assets/missing.png";
 

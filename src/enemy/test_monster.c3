@@ -1,10 +1,9 @@
+module enemy::test_monster;
+
 import entity;
 import world;
-import monster;
-import monster_generic;
-import thinkers;
+import enemy;
 import player;
-import state_machine;
 
 import std::io;
 
@@ -45,6 +44,9 @@ fn ThinkResult TestMonster.think(&self, Entity* ent, World* w, float dt) @dynami
 			else {
 				ent.timer.reset_to_secs(TEST_ACTIVATION_TIME);
 			}
+		break;
+		case FOLLOWING:
+			
 		break;
 		default:
 			io::printfn("TestMonster: Unimplemented state %s", TMState.names[s]);
