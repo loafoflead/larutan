@@ -41,7 +41,8 @@ struct Body {
 
 fn void Body.update(&self, float dt) {
 	self.dir -= self.dir_vel * dt;
-	self.dir = self.dir.rem(2.0*math::PI);
+	if (self.dir >= math::PI*2.0) self.dir = 0.0 + (self.dir - math::PI*2.0);
+	if (self.dir < 0) self.dir = math::PI*2.0 + (self.dir);
 	self.camera_plane = self.camera_plane.rotate(-(double)(self.dir_vel * dt));
 	
 	if (self.flags & entity::FRICTIONLESS == 0) {
@@ -67,7 +68,7 @@ fn Body new_body(double w, double h, bool collides = true, bool simulated = true
 		.acc = {0.0, 0.0},
 		.dir = dir,
 		.dir_vel = dir_vel,
-		.camera_plane = {0, 0.45}, // default small FOV
+		.camera_plane = {0, 0.50}, // default small FOV
 		.scale = {w, h},
 	};
 	return body;

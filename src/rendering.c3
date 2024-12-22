@@ -100,17 +100,20 @@ fn RaycastHit cast_ray(MapCell* map, Vec2 og, Vec2 dir) {
 			side = 1;
 		}
 
-
-		if (map[map_y * world::MAP_WIDTH + map_x] > 0) {
-			hit = true;
-		}
-
 		depth ++;
+
 		if (depth > MAX_DDA_DEPTH) {
 			break;
 		}
 		else if (dist > MAX_DDA_DIST) {
 			break;
+		}
+
+		if ((map_y * world::MAP_WIDTH + map_x) >= world::MAP_WIDTH*world::MAP_HEIGHT) continue;
+		if ((map_y * world::MAP_WIDTH + map_x) < 0) continue;
+		
+		if (map[map_y * world::MAP_WIDTH + map_x] > 0) {
+			hit = true;
 		}
 
 		if (map_x >= world::MAP_WIDTH || map_x < 0 || map_y < 0 || map_y >= world::MAP_HEIGHT) {

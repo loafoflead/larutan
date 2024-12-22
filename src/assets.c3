@@ -50,9 +50,10 @@ struct SpriteSheetData {
 	usz w, h;
 	usz rows, cols;
 	usz[<2>] sprite_dimensions;
+	usz index_of_zero;
 }
 
-fn SpriteSheetData! spritesheet(usz w, usz h, usz[<2>] dims) {
+fn SpriteSheetData! spritesheet(usz w, usz h, usz[<2>] dims, usz zero = 0) {
 	if (w % dims.x != 0) {
 		return SpriteSheetError.WIDTH_MISMATCH?;
 	}
@@ -66,6 +67,7 @@ fn SpriteSheetData! spritesheet(usz w, usz h, usz[<2>] dims) {
 		.rows = w / dims.x,
 		.cols = h / dims.y,
 		.sprite_dimensions = dims,
+		.index_of_zero = 0,
 	};
 }
 

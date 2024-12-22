@@ -19,6 +19,7 @@ import player;
 import thinkers;
 
 import test_monster;
+import monster;
 import state_machine;
 
 const String MISSING_FILEPATH = "assets/missing.png";
@@ -106,7 +107,7 @@ fn void! main() {
 		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE, {}},
 		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE, {}},
 		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE, {}},
-		{"guy", "assets/sprites/8boy.png", AssetType.SPRITESHEET, assets::spritesheet(8*32, 32, {32,32})!! },
+		{"guy", "assets/sprites/direction_tester.png", AssetType.SPRITESHEET, assets::spritesheet(8*16, 16, {16,16})!! },
 	})!!;
 
 	Image render_img = raylib::gen_image_colour(RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT, WHITE);
@@ -143,7 +144,8 @@ fn void! main() {
 		.pos = {3.0, 6.0f},
 		.body = entity::new_body(
 			player::PLAYER_SIDE_LENGTH, player::PLAYER_SIDE_LENGTH,
-			dir: math::PI,
+			dir: math::PI, // has to be PI because if it was 0
+						   // cam plane would be {0.0, -0.78}, which is ugly
 		),
 		.camera_plane = {0.0, 0.78}, // sort of a measure of how far on either side the FOV 
 									 // extends to, initially perpendicular
@@ -165,16 +167,12 @@ fn void! main() {
 		)
 	);
 
-	world.entities.push(
-		entity::new_thinker(
-			EntityType.INDESTRUCTIBLE_DECORATION,
-			{4,10},
-			sprite::new_spritesheet(3, &((AssetDescriptor*)assets.get_name_desc("guy")!!).spritesheet_info, is_relative: true)!,
-			think_fn: &Entity.be_spinner,
-			body: entity::new_body(1.25, 1.25),
-			timer: timer::new_secs(1.25),
-		)
-	);
+	/*world.entities.push( entity::new_thinker
+	  ( EntityType.INDESTRUCTIBLE_DECORATION,{4,10}, sprite::new_spritesheet
+	  (3, &((AssetDescriptor*)assets.get_name_desc
+	  ("guy")!!).spritesheet_info, is_relative: true)!,
+	  think_fn: &Entity.be_spinner, body: entity::new_body(1.25, 1.25),
+	  timer: timer::new_secs(1.25), ) );*/
 
 	TestMonster* tm = calloc(TestMonster.sizeof);
 	tm.init(TMState.IDLE);
@@ -277,32 +275,67 @@ fn void! main() {
 		if (draw_minimap) {
 			Vec2 pos = (player.pos * MINIMAP_SCALE_FACTOR);
 			raylib::draw_rectangle(
-				(int)((pos.x - player::PLAYER_SIDE_LENGTH/2)), 
-				(int)((pos.y - player::PLAYER_SIDE_LENGTH/2)), 
+				(int)((pos.x - (player::PLAYER_SIDE_LENGTH*MINIMAP_SCALE_FACTOR)/2)), 
+				(int)((pos.y - (player::PLAYER_SIDE_LENGTH*MINIMAP_SCALE_FACTOR)/2)), 
 				(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
 				(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
 				{255, 255, 0, 255}
 			);
 			// raylib::draw_line_ex(player.pos, (player.pos + player.dir.angle_to_cart() * 100.0), 5.0, {255, 0, 0, 255});
 
-			int[<2>] next = (int[<2>])(pos + player.dir.angle_to_cart() * 100.0);
-			int[<2>] perp = (int[<2>])(pos + (player.dir + math::PI_2).angle_to_cart() * RENDER_WINDOW_WIDTH / 2.0);
-			int[<2>] perp2 = (int[<2>])(pos + (player.dir - math::PI_2).angle_to_cart() * RENDER_WINDOW_WIDTH / 2.0);
-			int[<2>] fovleft = (int[<2>])(pos + (player.dir - FOV_ANGLE/2.0).angle_to_cart() * 100.0);
-			int[<2>] fovright = (int[<2>])(pos + (player.dir + FOV_ANGLE/2.0).angle_to_cart() * 100.0);
-			int[<2>] cam_plane_middle = (int[<2>])(pos + player.dir.angle_to_cart() * MINIMAP_SCALE_FACTOR);
-			int[<2>] cam_plane_left = (int[<2>])((double[<2>])cam_plane_middle + player.camera_plane *
-			MINIMAP_SCALE_FACTOR);
 
-			int[<2>] cam_plane_og = (int[<2>])(pos + player.camera_plane) * (int)MINIMAP_SCALE_FACTOR;
-			int[<2>] cam_plane = (int[<2>])(pos + player.camera_plane + (player.dir + math::PI_2).angle_to_cart() * 50.0);
+			Vec2 fov_left = player.pos + player.body.dir.angle_to_cart() - player.body.camera_plane;
+			Vec2 fov_right = player.pos + player.body.dir.angle_to_cart() + player.body.camera_plane;
 
-			raylib::draw_line((int)pos.x, (int)pos.y, next.x, next.y, {0, 255, 0, 255});
-			//raylib::draw_line((int)pos.x, (int)pos.y, perp.x, perp.y, {255, 255, 0, 255});
-			//raylib::draw_line((int)pos.x, (int)pos.y, perp2.x, perp2.y, {255, 255, 0, 255});
-			//raylib::draw_line((int)pos.x, (int)pos.y, fovleft.x, fovleft.y, {255, 255, 0, 255});
-			//raylib::draw_line((int)pos.x, (int)pos.y, fovright.x, fovright.y, {255, 255, 0, 255});
-			raylib::draw_line((int)cam_plane_middle.x, (int)cam_plane_middle.y, cam_plane_left.x, cam_plane_left.y, {255, 255, 0, 255});
+			fov_left *= MINIMAP_SCALE_FACTOR;
+			fov_right *= MINIMAP_SCALE_FACTOR;
+
+			int[<2>] i_fov_left = (int[<2>])fov_left;
+			int[<2>] i_fov_right = (int[<2>])fov_right;
+
+			raylib::draw_line((int)pos.x, (int)pos.y, i_fov_left.x, i_fov_left.y, {255, 0, 0, 255});
+			raylib::draw_line((int)pos.x, (int)pos.y, i_fov_right.x, i_fov_right.y, {255, 0, 0, 255});
+
+			foreach (ent: world.entities) {
+				pos = ent.pos * MINIMAP_SCALE_FACTOR;
+				raylib::draw_rectangle(
+					(int)((pos.x - (player::PLAYER_SIDE_LENGTH*MINIMAP_SCALE_FACTOR)/2)), 
+					(int)((pos.y - (player::PLAYER_SIDE_LENGTH*MINIMAP_SCALE_FACTOR)/2)), 
+					(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
+					(int)(player::PLAYER_SIDE_LENGTH * MINIMAP_SCALE_FACTOR), 
+					{255, 255, 0, 255}
+				);
+
+				fov_left = ent.pos + ent.body.dir.angle_to_cart() - ent.body.camera_plane;
+				fov_right = ent.pos + ent.body.dir.angle_to_cart() + ent.body.camera_plane;
+				Vec2 r_fov_left = ent.body.dir.angle_to_cart() - ent.body.camera_plane;
+				Vec2 r_fov_right = ent.body.dir.angle_to_cart() + ent.body.camera_plane;
+
+				for (int i = 0; i < monster::DEFAULT_ENEMY_VIEWCHK_RAYCOUNT; i++) {
+					Vec2 ray_dir = r_fov_left.lerp(r_fov_right, ((double)i/(double)monster::DEFAULT_ENEMY_VIEWCHK_RAYCOUNT));
+
+					Colour col = {255, 0, 0, 255};
+
+					if ( try hit = world.hits_player(ent.pos, ray_dir) ) {
+						col = {0, 255, 0, 255};
+					}
+					ray_dir += ent.pos;
+					ray_dir *= MINIMAP_SCALE_FACTOR;
+
+					int[<2>] iraydir= (int[<2>])ray_dir;
+
+					raylib::draw_line((int)pos.x, (int)pos.y, iraydir.x, iraydir.y, col);				
+				}
+
+				fov_left *= MINIMAP_SCALE_FACTOR;
+				fov_right *= MINIMAP_SCALE_FACTOR;
+
+				i_fov_left = (int[<2>])fov_left;
+				i_fov_right = (int[<2>])fov_right;
+
+				raylib::draw_line((int)pos.x, (int)pos.y, i_fov_left.x, i_fov_left.y, {255, 0, 0, 255});
+				raylib::draw_line((int)pos.x, (int)pos.y, i_fov_right.x, i_fov_right.y, {255, 0, 0, 255});
+			}
 		}
 
 		// ---------------------------------------------------------------------

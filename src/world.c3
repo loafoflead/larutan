@@ -19,6 +19,10 @@ const uint MAP_WIDTH = 30;
 const uint MAP_HEIGHT = MAP_WIDTH;
 const Rect MAP_RECT = Rect { 0, 0, MAP_WIDTH, MAP_HEIGHT };
 
+fault RaycastError {
+	NOT_HIT,
+}
+
 struct World {
 	MapCell* map;
 	Player* player;
@@ -37,12 +41,29 @@ fn bool World.ray_hits(World* this, Vec2 og, Vec2 dir, EntityList* ents) {
 	return false;
 }
 
+fn RaycastHit! World.hits_player(&self, Vec2 og, Vec2 dir, float range = RAYCAST_DIST) {
+	Vec2f begin = Vec2f {(float)og.x, (float)og.y};
+	Vec2f end = Vec2f {(float)og.x + (float)dir.x * range, (float)og.y + (float)dir.y * range};
+
+	if (try hit_pos = raylib::line_collides_rect(self.player.centred_hitbox(), begin, end)) {
+		RaycastHit hit = {
+			.dist = (begin - hit_pos).length(),
+			.hit = true,
+			.hit_player = true,
+			.player = self.player,
+		};
+		return hit;
+	}
+	return RaycastError.NOT_HIT?;
+}
+
 // TODO: when hitting an entity, the ray will sometimes be right up in a cell 
 // and therefore inside an entity on the border between two or more cells
 // when hit, so the hit is registered way far off from where it actually 
 // hits the entity's hitbox
 // TODO: make this return an optional for snazzy syntax & hit detection
 // TODO: make exclude better lmao hacky fix
+// TODO: make range a parameter
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null) {
 	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);

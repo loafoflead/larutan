@@ -3,6 +3,8 @@ import std::collections::list;
 import std::math;
 import assets;
 
+import std::io;
+
 def ModelList = List(<EntityModel*>);
 
 fault SpriteSheetError {
@@ -114,13 +116,15 @@ fn void EntityModel.set_spritesheet_portion(&self, Vec2 player_pos) {
 			if (!self.is_relative_to_player) {
 				return;
 			}
+			usz n = self.sprite_sheet.dims.rows;
+
 			Vec2 me_to_player = player_pos - self.pos;
-			double ang = math::atan2(me_to_player.x, me_to_player.y) + self.dir; 
+			double ang = math::atan2(me_to_player.y, me_to_player.x) + self.dir + ((2.0*math::PI)/(double)n)/2; 
 
-			usz n = self.sprite_sheet.dims.rows * self.sprite_sheet.dims.cols;
-			usz idx = (usz)((ang / (2.0 * math::PI)) * (double)n);
+			usz idx = (usz)(  (ang / (2.0 * math::PI))  * (double)n );
+//			io::printfn("%f -> %d", ang, idx);
 
-			self.sprite_sheet.set_index(idx);
+			self.sprite_sheet.set_index(idx - self.sprite_sheet.dims.index_of_zero);
 		case ModelType.SPRITE:
 			return;
 	}
