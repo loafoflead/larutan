@@ -1,8 +1,8 @@
 # LARUTAN
 
-LARUTAN (Natural backwards) is a raycasting game in the style of Wolfenstein 3D inspired (the rendering code is entirely copied in fact) by the tutorial by [https://lodev.org/cgtutor/raycasting.html](Lodev). The game is implemented in [https://c3-lang.org](C3), which is a work-in-progress evolution of the C language with built-in vectors and cool macro stuff. 
+LARUTAN (Natural backwards) is a raycasting game in the style of Wolfenstein 3D inspired (the rendering code is entirely copied in fact) by the tutorial by [Lodev](https://lodev.org/cgtutor/raycasting.html). The game is implemented in [C3](https://c3-lang.org), which is a work-in-progress evolution of the C language with built-in vectors and cool macro stuff. 
 
-LARUTAN (NATUREL à l'envers) est un jeu de 'raycasting' dans le style de Wolfenstein 3D, inspiré (en très grande partie, notamment pour le rendu graphique) par le tutoriel de [https://lodev.org/cgtutor/raycasting.html](Lodev). Le jeu est écrit en [https://c3-lang.org](C3), une évolution du langage C avec support pour des vecteurs multi-dimensionnels et de la magie avec les macros qui n'est pas disponible en C.
+LARUTAN (NATUREL à l'envers) est un jeu de 'raycasting' dans le style de Wolfenstein 3D, inspiré (en très grande partie, notamment pour le rendu graphique) par le tutoriel de [Lodev](https://lodev.org/cgtutor/raycasting.html). Le jeu est écrit en [C3](https://c3-lang.org), une évolution du langage C avec support pour des vecteurs multi-dimensionnels et de la magie avec les macros qui n'est pas disponible en C.
 
 # Controls
 
@@ -10,9 +10,9 @@ ZQSD (WASD) to move around (ZS/WS to move backwards and forwards, QD/AD to turn)
 
 # Building
 
-In order to build LARUTAN you will need the C3 compiler, which can be found on the [https://c3-lang.org/install-c3/prebuilt-binaries/](c3 website). Follow that tutorial and once you have the compiler installed (no worries if its in the same directory as the project, that may make things easier, especially if you get a problem with finding the standard library).
+In order to build LARUTAN you will need the C3 compiler, which can be found on the [c3 website](https://c3-lang.org/install-c3/prebuilt-binaries/). Follow that tutorial and once you have the compiler installed (no worries if its in the same directory as the project, that may make things easier, especially if you get a problem with finding the standard library).
 
-You will also need raylib 5.0, which can be found on the [https://raylib.com](raylib) website, although I reccommend finding the binaries in the [https://github.com/raysan5/raylib/releases](github releases page) and installing them in the same directory as this folder. My file structure looks like this:
+You will also need raylib 5.0, which can be found on the [raylib](https://raylib.com) website, although I reccommend finding the binaries in the [github releases page](https://github.com/raysan5/raylib/releases) and installing them in the same directory as this folder. My file structure looks like this:
 
 ```
 *-- larutan
@@ -52,15 +52,15 @@ If you have any further issues, try googling around or asking an elder. Or open 
 
 # NOTES
 
-The reason for this project are the recreational programming streams by [github.com/tsoding](Tosding). This isn't the first raycaster I've made but his streams encouraged me to try a new language so... I recommend his streams/vids. I'll list more inspirations as the project advances. 
+The reason for this project are the recreational programming streams by [Tosding](github.com/tsoding). This isn't the first raycaster I've made but his streams encouraged me to try a new language so... I recommend his streams/vids. I'll list more inspirations as the project advances. 
 
-The code structure is at some points very much inspired by DOOM 1993, for instance the entity think system, the hitboxes and physics and stuff. I recommend checking out the [https://github.com/id-Software/DOOM](source code). It's not exactly an easy read, and in fact I haven't actually read any of it myself, but have seen a few videos about it. I recommend [https://m.youtube.com/decino](decino) for breakdowns on Entity and weapon systems.  
+The code structure is at some points very much inspired by DOOM 1993, for instance the entity think system, the hitboxes and physics and stuff. I recommend checking out the [source code](https://github.com/id-Software/DOOM). It's not exactly an easy read, and in fact I haven't actually read any of it myself, but have seen a few videos about it. I recommend [decino](https://m.youtube.com/decino) for breakdowns on Entity and weapon systems.  
 
 The project is in its very early stages... not many things work but the very basic engine. Plans are to optimise (very slow) and add real gameplay, notably using weapons, picking up weapons, enemy ai that works, and a physics implementation that isn't simply: 'try everything against everything else and hope for the best.' Thank you for your patience. 
 
 # CREDITS
 
-Credit for brick wall texture: [https://www.the3rdsequence.com/texturedb/texture/9/brick+wall/](TODO: find this person's name)
+Credit for brick wall texture: [(TODO: find this person's name)](https://www.the3rdsequence.com/texturedb/texture/9/brick+wall/)
 
 TODO: 
  - License (same as raylib)
