@@ -4,6 +4,7 @@ import std::io;
 import std::core::mem;
 import std::math;
 import libc;
+import astar;
 
 const int GRID_WIDTH = 4;
 const int GRID_HEIGHT = 4;
@@ -17,8 +18,6 @@ const short UP = 0b0100;
 const short DOWN = 0b1000;
 
 def IVec = int[<2>];
-
-def GridCell = short;
 
 fn IVec[4] GridCell.get_doors(GridCell this) {
 	IVec[4] doors;

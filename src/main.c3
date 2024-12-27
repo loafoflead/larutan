@@ -9,12 +9,14 @@ import std::collections::list;
 import bindings;
 import rendering;
 import utils;
-import world;
+import world @norecurse;
 import assets;
 import entity, entity::thinkers;
 import player;
 
 import enemy;
+
+import astar;
 
 const String MISSING_FILEPATH = "assets/missing.png";
 
@@ -60,7 +62,7 @@ usz time = 0;
 
 fn void! main() {
 	// FIXME: prototype
-	room_gen::generate_rooms();
+//	room_gen::generate_rooms();
 
 	raylib::init_window(WINDOW_WIDTH, WINDOW_HEIGHT, "hello from c3");
 	defer raylib::close_window();
@@ -68,7 +70,14 @@ fn void! main() {
 	raylib::set_target_fps(60);
 
 	World world;
-	world.map = (MapCell*)calloc(world::MAP_WIDTH * world::MAP_HEIGHT * MapCell.sizeof);
+	world.map = Grid {
+		.w = world::MAP_WIDTH,
+		.h = world::MAP_HEIGHT,
+		.grid = mem::new_array(GridCell, world::MAP_WIDTH*world::MAP_HEIGHT),
+		.empties = {0},
+		.costs = {},
+	};
+//	(MapCell*)calloc(world::MAP_WIDTH * world::MAP_HEIGHT * MapCell.sizeof);
 
 	Image missing = raylib::load_image(MISSING_FILEPATH);
 	while(!raylib::is_image_ready(missing)) {}
@@ -101,7 +110,11 @@ fn void! main() {
 		{"barrel", "assets/sprites/barrel.png", AssetType.PNGIMAGE, {}},
 		{"boy", "assets/sprites/boy.png", AssetType.PNGIMAGE, {}},
 		{"ball", "assets/sprites/bouncing_ball.png", AssetType.PNGIMAGE, {}},
-		{"guy", "assets/sprites/direction_tester.png", AssetType.SPRITESHEET, assets::spritesheet(8*16, 16, {16,16})!! },
+		{
+			"guy", "assets/sprites/direction_tester.png", 
+			AssetType.SPRITESHEET, 
+			assets::spritesheet(8*16, 16, {16,16})!! 
+		},
 	})!!;
 
 	Image render_img = raylib::gen_image_colour(RENDER_WINDOW_WIDTH, RENDER_WINDOW_HEIGHT, WHITE);
@@ -128,12 +141,12 @@ fn void! main() {
 	for (int i = 0; i < world::MAP_HEIGHT; ++i) {
 		for (int j = 0; j < world::MAP_WIDTH; ++j) {
 			if (i == 0 && j != 0 || i == j) {
-				world.map[(i * world::MAP_WIDTH + j)] = 1;
+				world.map.grid[(i * world::MAP_WIDTH + j)] = 1;
 			}
 		}
 	}
 
-	world.map[5 * world::MAP_WIDTH + 1] = 1;
+	world.map.grid[5 * world::MAP_WIDTH + 1] = 1;
 	Player player = Player {
 		.pos = {3.0, 6.0f},
 		.body = entity::new_body(
@@ -161,12 +174,13 @@ fn void! main() {
 		)
 	);
 
-	/*world.entities.push( entity::new_thinker
+	world.entities.push( entity::new_thinker
 	  ( EntityType.INDESTRUCTIBLE_DECORATION,{4,10}, sprite::new_spritesheet
 	  (3, &((AssetDescriptor*)assets.get_name_desc
 	  ("guy")!!).spritesheet_info, is_relative: true)!,
 	  think_fn: &Entity.be_spinner, body: entity::new_body(1.25, 1.25),
-	  timer: timer::new_secs(1.25), ) );*/
+	  timer: timer::new_secs(1.25), ) 
+	);
 
 	TestMonster* tm = calloc(TestMonster.sizeof);
 	tm.init(TMState.IDLE);
@@ -229,10 +243,10 @@ fn void! main() {
 		// RAYCAST AND BLIT TEXTURE
 		// ---------------------------------------------------------------------
 
-		if (draw_floor_and_ceiling) (void)rendering::raycast_floors(&player, world.map, &assets, &world_textures, pixels);
+		if (draw_floor_and_ceiling) (void)rendering::raycast_floors(&player, world.map.grid, &assets, &world_textures, pixels);
 
 		for (int i = 0; i < RENDER_WINDOW_WIDTH; i ++) z_buffer[i] = math::DOUBLE_MAX;
-		(void)rendering::raycast_walls(&player, world.map, &assets, &world_textures, pixels, z_buffer);
+		(void)rendering::raycast_walls(&player, world.map.grid, &assets, &world_textures, pixels, z_buffer);
 
 		(void)rendering::render_sprites(&player, &to_render, &assets, &sprite_textures, pixels, z_buffer);
 
@@ -258,7 +272,7 @@ fn void! main() {
 		if (draw_minimap) {
 			for (int y = 0; y < world::MAP_HEIGHT; y ++) {
 				for (int x = 0; x < world::MAP_WIDTH; x ++) {
-					if (world.map[y * world::MAP_WIDTH + x] > 0) {
+					if (world.map.grid[y * world::MAP_WIDTH + x] > 0) {
 						raylib::draw_rectangle(x * (int)MINIMAP_SCALE_FACTOR, y * (int)MINIMAP_SCALE_FACTOR, (int)MINIMAP_SCALE_FACTOR, (int)MINIMAP_SCALE_FACTOR, {200, 200, 200, 100});
 					}
 				}
@@ -394,7 +408,7 @@ fn void! main() {
 		
 		player.body.vel += acc * dt;
 
-		player.pos = entity::process_body_collisions(world.map, world.entities, player.pos, player.body, null);
+		player.pos = entity::process_body_collisions(world.map.grid, world.entities, player.pos, player.body, null);
 
 		player.dir_vel += turn_acc * (double)dt;
 		
@@ -406,13 +420,13 @@ fn void! main() {
 
 		foreach (&ent : world.entities) {
 			if (!ent.dead && ent.can_collide()) {
-				ent.pos = entity::process_body_collisions(world.map, world.entities, ent.pos, ent.body, ent);
+				ent.pos = entity::process_body_collisions(world.map.grid, world.entities, ent.pos, ent.body, ent);
 
 				ent.body.update(dt);	
 			}
 		}
 
-		world::update_world_occupied_cells(&world, world.entities, &player);
+//		world::update_world_occupied_cells(&world, world.entities, &player);
 		
 	} // GAMELOOP
 }

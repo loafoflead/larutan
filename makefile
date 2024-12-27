@@ -7,11 +7,12 @@ OUTPUT_NAME = ./build/main
 
 INCLUDES = \
 	./src/enemy/*.c3  		\
-	./src/bindings/*.c3	\
+	./src/bindings/*.c3		\
 	./src/entity/*.c3		\
-	./src/rendering/*.c3	\
+	./src/rendering/*.c3		\
 	./src/utils/*.c3		\
-	./src/world/*.c3
+	./src/world/*.c3		\
+	./src/pathfinding/*.c3		\
 # FOLDERS = "src/bindings/*.c3 src/enemy/*.c3 src/entity/*.c3 src/rendering/*.c3 src/utils/*.c3 src/world/*.c3"
 
 fast: src/main.c3

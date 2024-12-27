@@ -7,6 +7,7 @@ import entity;
 import player;
 import rendering;
 import bindings::raylib;
+import astar;
 
 import std::io;
 
@@ -14,7 +15,7 @@ const double MAP_AABB_RAYCAST_CHECK_RAY_STEP = 0.1;
 const double MAX_NEARBY_DIST = 1.0;
 const float RAYCAST_DIST = 256f;
 
-def MapCell = short;
+def MapCell = GridCell;
 def IndexList = List(<usz>);
 
 const uint MAP_WIDTH = 30;
@@ -26,7 +27,7 @@ fault RaycastError {
 }
 
 struct World {
-	MapCell* map;
+	Grid map;
 	Player* player;
 	EntityList entities;
 	// list of cells that have a sprite in them, so that when raycasting into 
@@ -67,7 +68,8 @@ fn RaycastHit! World.hits_player(&self, Vec2 og, Vec2 dir, float range = RAYCAST
 // TODO: make exclude better lmao hacky fix
 // TODO: make range a parameter
 fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = null, bool exclude_player = false) {
-	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
+	RaycastHit hit = {};
+/*	MapCell* temp_map = mem::new_array(MapCell, MAP_WIDTH*MAP_HEIGHT);
 	defer free(temp_map);
 
 	foreach(cell: this.occupied_cells) {
@@ -78,25 +80,25 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 	RaycastHit hit = rendering::cast_ray(temp_map, og, dir);
 
 	Vec2 hit_pt = og + dir * hit.dist;
-	double added_dist = 0;
+*/	double added_dist = 0;
 	Vec2f begin = Vec2f {(float)og.x, (float)og.y};
 	Vec2f end = Vec2f {(float)og.x + (float)dir.x * RAYCAST_DIST, (float)og.y + (float)dir.y * RAYCAST_DIST};
 
-	if (hit.hit) {
-		foreach(ent:this.entities) {
-			if (&ent == exclude) continue;
-			if (ent.dead) continue;
-			if (!ent.can_collide()) continue;
-			//if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
+//	if (hit.hit) {
+	foreach(ent:this.entities) {
+		if (&ent == exclude) continue;
+		if (ent.dead) continue;
+		if (!ent.can_collide()) continue;
+		//if ((ent.pos - hit_pt).length_sq() > MAX_NEARBY_DIST) continue;
 
-			if (try hit_pos = raylib::line_collides_rect(ent.body.centred_box(ent.pos), begin, end)) {
-				hit.dist = (begin - hit_pos).length();
-				hit.entity = &ent;
-				return hit;
-			}
+		if (try hit_pos = raylib::line_collides_rect(ent.body.centred_box(ent.pos), begin, end)) {
+			hit.dist = (begin - hit_pos).length();
+			hit.entity = &ent;
+			hit.hit = true;
+			return hit;
 		}
-
 	}
+//	}
 
 	if (!exclude_player) {
 		if (try hit_pos = raylib::line_collides_rect(this.player.centred_hitbox(), begin, end)) {
@@ -108,12 +110,11 @@ fn RaycastHit World.cast_ray(World* this, Vec2 og, Vec2 dir, Entity* exclude = n
 		}
 	}
 
-	hit = rendering::cast_ray(this.map, og, dir);
+	hit = rendering::cast_ray(this.map.grid, og, dir);
 
 	// just checking if it hit or not...
 	if (hit.hit) return hit;
 
-	hit.hit = false;
 	return hit;
 }
 

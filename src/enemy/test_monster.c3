@@ -45,9 +45,6 @@ fn ThinkResult TestMonster.think(&self, Entity* ent, World* w, float dt) @dynami
 				ent.timer.reset_to_secs(TEST_ACTIVATION_TIME);
 			}
 		break;
-		case FOLLOWING:
-			
-		break;
 		default:
 			io::printfn("TestMonster: Unimplemented state %s", TMState.names[s]);
 	}
